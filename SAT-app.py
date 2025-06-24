@@ -77,7 +77,7 @@ def calculate_sat(df):
     df["Trend"] = df["Stage"].rolling(window=25).mean()
 
     return df
-print("Kolommen in df:", df.columns)
+
 def determine_advice(df, threshold=0.05):
     df = df.copy()
     df["TrendChange"] = df["Trend"] - df["Trend"].shift(1)
