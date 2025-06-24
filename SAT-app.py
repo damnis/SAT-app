@@ -31,6 +31,7 @@ def fetch_data(ticker, interval):
 # -----------------------
 # SAT-indicator
 # -----------------------
+print("Kolommen in df:", df.columns)
 def calculate_sat(df):
     df = df.copy()
 
