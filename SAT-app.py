@@ -4,31 +4,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# --- Titel ---
-st.set_page_config(page_title="SAT App", layout="wide")
-st.title("📈 SAT App (Stage And Trend)")
-
-# --- Keuze uit aandelen ---
-ticker_dict = {
-    "Apple": "AAPL",
-    "Microsoft": "MSFT",
-    "Tesla": "TSLA",
-    "NVIDIA": "NVDA",
-    "Meta": "META",
-    "Alphabet (Google)": "GOOGL",
-    "Amazon": "AMZN",
-    "ASML": "ASML.AS",
-    "Shell": "SHEL.AS",
-    "Aegon": "AGN.AS"
-}
-
-ticker_name = st.selectbox("Kies een aandeel:", list(ticker_dict.keys()))
-ticker = ticker_dict[ticker_name]
-
-# --- Intervalkeuze ---
-interval = st.selectbox("Kies interval:", ["1d", "1wk", "4h", "1h", "15m"], index=0)
-
-# --- Periode bepalen ---
+# -----------------------
+# DATA OPHALEN
+# -----------------------
 def fetch_data(ticker, interval):
     if interval == "15m":
         period = "7d"
@@ -40,95 +18,146 @@ def fetch_data(ticker, interval):
         period = "360d"
     else:
         period = "360wk"
-
     df = yf.download(ticker, interval=interval, period=period)
+    df = df[
+        (df["Volume"] > 0) &
+        ((df["Open"] != df["Close"]) | (df["High"] != df["Low"]))
+    ]
+    if not isinstance(df.index, pd.DatetimeIndex):
+        df.index = pd.to_datetime(df.index, errors="coerce")
+    df = df[~df.index.isna()]
     return df
 
-# --- SAT Indicator ---
-# --- SAT Indicator ---
+# -----------------------
+# SAT-indicator
+# -----------------------
 def calculate_sat(df):
-    # Bereken voortschrijdende gemiddelden
-    ma150 = df["Close"].rolling(window=150).mean()
-    ma30 = df["Close"].rolling(window=30).mean()
-
-    df["ma150"] = ma150
-    df["ma30"] = ma30
-    df["ma150_prev"] = ma150.shift(1)
-    df["ma30_prev"] = ma30.shift(1)
-
-    stage = []
-    prev_stage = 0
-
-    for i in range(len(df)):
-        try:
-            ma150_now = float(df.at[i, "ma150"]) if pd.notna(df.at[i, "ma150"]) else None
-            ma150_prev = float(df.at[i, "ma150_prev"]) if pd.notna(df.at[i, "ma150_prev"]) else None
-            ma30_now = float(df.at[i, "ma30"]) if pd.notna(df.at[i, "ma30"]) else None
-            ma30_prev = float(df.at[i, "ma30_prev"]) if pd.notna(df.at[i, "ma30_prev"]) else None
-            close = float(df.at[i, "Close"]) if pd.notna(df.at[i, "Close"]) else None
-        except Exception as e:
-            stage.append(np.nan)
-            continue
-
-        if None in [ma150_now, ma150_prev, ma30_now, ma30_prev, close]:
-            stage.append(np.nan)
-            continue
-
-        if (ma150_now > ma150_prev and close > ma150_now and 
-            (ma30_now > close or (ma30_now < ma30_prev and ma30_now > close))):
-            stage_value = -1  # Stage 3.1
-        elif (ma150_now < ma150_prev and close < ma150_now and 
-              close > ma30_now and ma30_now > ma30_prev):
-            stage_value = 1   # Stage 1.1
-        elif (ma150_now > close and ma150_now > ma150_prev):
-            stage_value = -1  # Stage 3.3
-        elif (ma150_now > close and ma150_now < ma150_prev):
-            stage_value = -2  # Stage 4
-        elif (ma150_now < close and ma150_now < ma150_prev and 
-              ma30_now > ma30_prev):
-            stage_value = 1   # Stage 1.3
-        elif (ma150_now < close and ma150_now > ma150_prev and 
-              ma30_now > ma30_prev):
-            stage_value = 2   # Stage 2
-        else:
-            stage_value = prev_stage  # Zelfde als vorige
-
-        prev_stage = stage_value
-        stage.append(stage_value)
-
-    df["Stage"] = stage
-    df["Trend"] = pd.Series(stage).rolling(window=25).mean()
-
+    df = df.copy()
+    df["range"] = df["High"] - df["Low"]
+    df["body"] = abs(df["Close"] - df["Open"])
+    df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
+    df["volatiliteit"] = df["range"].rolling(window=14).mean()
+    df["SAT"] = (
+        df["direction"] *
+        (df["body"] / df["range"].replace(0, np.nan)) *
+        (df["range"] / df["volatiliteit"].replace(0, np.nan))
+    )
+    df["SAT"].fillna(0, inplace=True)
     return df
-    
 
+# -----------------------
+# Advies en rendement
+# -----------------------
+def determine_advice(df, threshold):
+    df = df.copy()
+    df["Trend"] = df["SAT"].rolling(window=3).mean()
+    df["TrendChange"] = df["Trend"] - df["Trend"].shift(1)
+    df["Advies"] = np.nan
+    df.loc[df["TrendChange"] > threshold, "Advies"] = "Kopen"
+    df.loc[df["TrendChange"] < -threshold, "Advies"] = "Verkopen"
+    df["Advies"] = df["Advies"].ffill()
+    df["AdviesGroep"] = (df["Advies"] != df["Advies"].shift()).cumsum()
+    rendementen = []
+    sat_rendementen = []
+    for _, groep in df.groupby("AdviesGroep"):
+        start = groep["Close"].iloc[0]
+        eind = groep["Close"].iloc[-1]
+        advies = groep["Advies"].iloc[0]
+        markt_rendement = (eind - start) / start
+        sat_rendement = markt_rendement if advies == "Kopen" else -markt_rendement
+        rendementen.extend([markt_rendement] * len(groep))
+        sat_rendementen.extend([sat_rendement] * len(groep))
+    df["Markt-%"] = rendementen
+    df["SAT-%"] = sat_rendementen
+    if "Advies" in df.columns and df["Advies"].notna().any():
+        huidig_advies = df["Advies"].dropna().iloc[-1]
+    else:
+        huidig_advies = "Niet beschikbaar"
+    return df, huidig_advies
 
-# --- Ophalen en berekenen ---
+# -----------------------
+# UI - Streamlit
+# -----------------------
+
+st.title("📈 SAT Volatiliteitsindicator")
+
+# --- Tickerselecties ---
+aex_tickers = {...}  # zelfde als in SAM
+dow_tickers = {...}
+nasdaq_tickers = {...}
+ustech_tickers = {...}
+
+tab_labels = ["🇺🇸 Dow Jones", "🇺🇸 Nasdaq", "🇺🇸 US Tech", "🇳🇱 AEX"]
+selected_tab = st.radio("Kies beurs", tab_labels, horizontal=True)
+
+if selected_tab == "🇺🇸 Dow Jones":
+    ticker_label = st.selectbox("Dow Jones aandeel", [f"{k} - {v}" for k, v in dow_tickers.items()])
+elif selected_tab == "🇺🇸 Nasdaq":
+    ticker_label = st.selectbox("Nasdaq aandeel", [f"{k} - {v}" for k, v in nasdaq_tickers.items()])
+elif selected_tab == "🇺🇸 US Tech":
+    ticker_label = st.selectbox("US Tech aandeel", [f"{k} - {v}" for k, v in ustech_tickers.items()])
+else:
+    ticker_label = st.selectbox("AEX aandeel", [f"{k} - {v}" for k, v in aex_tickers.items()])
+
+ticker, ticker_name = ticker_label.split(" - ", 1)
+
+# --- Interval + Slider ---
+interval_optie = st.selectbox("Kies de interval", ["Dagelijks", "Wekelijks", "4-uur", "1-uur", "15-minuten"])
+interval_mapping = {
+    "Dagelijks": "1d",
+    "Wekelijks": "1wk",
+    "4-uur": "4h",
+    "1-uur": "1h",
+    "15-minuten": "15m"
+}
+interval = interval_mapping[interval_optie]
+thresh = st.slider("Gevoeligheid van trendverandering", 0.01, 2.0, 0.5, step=0.01)
+
+# --- Berekening ---
 df = fetch_data(ticker, interval)
 df = calculate_sat(df)
+df, huidig_advies = determine_advice(df, threshold=thresh)
 
-# --- Slider voor bereik ---
-slider_value = st.slider("Aantal dagen/perioden in beeld:", min_value=20, max_value=len(df), value=60)
-df = df.tail(slider_value)
+# --- Headeradvies ---
+advies_kleur = "green" if huidig_advies == "Kopen" else "red" if huidig_advies == "Verkopen" else "gray"
+st.markdown(
+    f"""
+    <h3>SAT-indicator en trend voor <span style='color:#3366cc'>{ticker_name}</span></h3>
+    <h2 style='color:{advies_kleur}'>Huidig advies: {huidig_advies}</h2>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- Grafiek ---
-st.subheader(f"Grafiek voor {ticker_name} ({interval})")
 fig, ax1 = plt.subplots(figsize=(10, 4))
-ax1.bar(df.index, df["Stage"], color="lightgreen", label="Stage")
+ax1.bar(df.index, df["SAT"], color="orange", label="SAT")
 ax2 = ax1.twinx()
 ax2.plot(df.index, df["Trend"], color="blue", label="Trend")
-ax1.set_ylabel("Stage")
+ax1.set_ylabel("SAT")
 ax2.set_ylabel("Trend")
 fig.tight_layout()
 st.pyplot(fig)
 
 # --- Tabel ---
-st.subheader("Laatste signalen")
-df_show = df[["Close", "Stage", "Trend"]].dropna().tail(30).copy()
-df_show["Datum"] = df_show.index.strftime("%d-%m-%Y")
-df_show = df_show[["Datum", "Close", "Stage", "Trend"]]
-df_show["Close"] = df_show["Close"].round(2)
-df_show["Trend"] = df_show["Trend"].round(2)
-st.dataframe(df_show, use_container_width=True)
+st.subheader("Laatste signalen en rendement")
 
-st.caption("De SAT (Stage And Trend) indicator is gebaseerd op lange- en kortetermijn-gemiddelden en kan richting geven aan beleggingsbeslissingen.")
+kolommen = ["Close", "Advies", "SAT", "Trend", "Markt-%", "SAT-%"]
+tabel = df[kolommen].dropna().tail(30).copy()
+tabel.index = pd.to_datetime(tabel.index, errors="coerce")
+tabel["Datum"] = tabel.index.strftime("%d-%m-%Y")
+tabel = tabel[["Datum"] + kolommen]
+tabel["Markt-%"] = (tabel["Markt-%"].astype(float) * 100).map("{:+.2f}%".format)
+tabel["SAT-%"] = (tabel["SAT-%"].astype(float) * 100).map("{:+.2f}%".format)
+
+# HTML-rendering
+html = """<style>table {border-collapse: collapse; width: 100%; font-family: Arial; font-size: 14px;}
+th {background-color: #004080; color: white; padding: 6px; text-align: center;}
+td {border: 1px solid #ddd; padding: 6px; text-align: right; background-color: #f9f9f9; color: #222;}
+tr:nth-child(even) td {background-color: #eef2f7;} tr:hover td {background-color: #d0e4f5;}</style>
+<table><thead><tr>
+<th style='width:110px;'>Datum</th><th>Close</th><th>Advies</th><th>SAT</th><th>Trend</th><th>Markt-%</th><th>SAT-%</th>
+</tr></thead><tbody>"""
+for _, row in tabel.iterrows():
+    html += "<tr>" + "".join([f"<td>{val}</td>" for val in row]) + "</tr>"
+html += "</tbody></table>"
+st.markdown(html, unsafe_allow_html=True)
