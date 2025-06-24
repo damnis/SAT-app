@@ -64,7 +64,7 @@ def calculate_sat(df):
             ma30_now = float(df.at[i, "ma30"]) if pd.notna(df.at[i, "ma30"]) else None
             ma30_prev = float(df.at[i, "ma30_prev"]) if pd.notna(df.at[i, "ma30_prev"]) else None
             close = float(df.at[i, "Close"]) if pd.notna(df.at[i, "Close"]) else None
-            except Exception as e:
+        except Exception as e:
     stage.append(np.nan)
     continue
  #       row = df.iloc[i]
