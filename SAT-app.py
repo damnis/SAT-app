@@ -13,38 +13,42 @@ st.title("SAT-indicator")
 # ---------------------------------
 def calculate_sat(df):
     df = df.copy()
-    df["ma150"] = df["Close"].rolling(window=150).mean()
-    df["ma30"] = df["Close"].rolling(window=30).mean()
+    df["MA150"] = df["Close"].rolling(window=150).mean()
+    df["MA30"] = df["Close"].rolling(window=30).mean()
+    df["MA150_prev"] = df["MA150"].shift(1)
+    df["MA30_prev"] = df["MA30"].shift(1)
 
-    stage = []
-    for i in range(len(df)):
-        if i < 150:
-            stage.append(np.nan)
-            continue
+    c = df["Close"]
+    ma150 = df["MA150"]
+    ma150_prev = df["MA150_prev"]
+    ma30 = df["MA30"]
+    ma30_prev = df["MA30_prev"]
 
-        c = df["Close"].iloc[i]
-        ma150 = df["ma150"].iloc[i]
-        ma150_prev = df["ma150"].iloc[i-1]
-        ma30 = df["ma30"].iloc[i]
-        ma30_prev = df["ma30"].iloc[i-1]
+    condlist = [
+        # stage 3.1
+        ((ma150 > ma150_prev) & (c > ma150) & (ma30 > c)) | ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c)),
+        # stage 1.1
+        (ma150 < ma150_prev) & (c < ma150) & (c > ma30) & (ma30 > ma30_prev),
+        # stage 3.3
+        (ma150 > c) & (ma150 > ma150_prev),
+        # stage 4
+        (ma150 > c) & (ma150 < ma150_prev),
+        # stage 1.3
+        (ma150 < c) & (ma150 < ma150_prev) & (ma30 > ma30_prev),
+        # stage 2
+        (ma150 < c) & (ma150 > ma150_prev) & (ma30 > ma30_prev),
+    ]
 
-        if (ma150 > ma150_prev and c > ma150 and ma30 > c) or (c > ma150 and ma30 < ma30_prev and ma30 > c):
-            stage.append(-1)
-        elif ma150 < ma150_prev and c < ma150 and c > ma30 and ma30 > ma30_prev:
-            stage.append(1)
-        elif ma150 > c and ma150 > ma150_prev:
-            stage.append(-1)
-        elif ma150 > c and ma150 < ma150_prev:
-            stage.append(-2)
-        elif ma150 < c and ma150 < ma150_prev and ma30 > ma30_prev:
-            stage.append(1)
-        elif ma150 < c and ma150 > ma150_prev and ma30 > ma30_prev:
-            stage.append(2)
-        else:
-            stage.append(stage[-1] if stage else np.nan)
+    choicelist = [-1, 1, -1, -2, 1, 2]
 
-    df["Stage"] = stage
-    df["Trend"] = pd.Series(stage).rolling(window=25).mean()
+    df["Stage"] = np.select(condlist, choicelist, default=np.nan)
+
+    # Vul lege waarden met vorige waarde
+    df["Stage"] = df["Stage"].ffill()
+
+    # Bepaal Trend als MA(25) van Stage
+    df["Trend"] = df["Stage"].rolling(window=25).mean()
+
     return df
 
 # ---------------------------------
