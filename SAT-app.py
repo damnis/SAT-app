@@ -59,11 +59,11 @@ def calculate_sat(df):
 
     for i in range(len(df)):
         try:
-        ma150_now = float(df.at[i, "ma150"]) if pd.notna(df.at[i, "ma150"]) else None
-        ma150_prev = float(df.at[i, "ma150_prev"]) if pd.notna(df.at[i, "ma150_prev"]) else None
-        ma30_now = float(df.at[i, "ma30"]) if pd.notna(df.at[i, "ma30"]) else None
-        ma30_prev = float(df.at[i, "ma30_prev"]) if pd.notna(df.at[i, "ma30_prev"]) else None
-        close = float(df.at[i, "Close"]) if pd.notna(df.at[i, "Close"]) else None
+            ma150_now = float(df.at[i, "ma150"]) if pd.notna(df.at[i, "ma150"]) else None
+            ma150_prev = float(df.at[i, "ma150_prev"]) if pd.notna(df.at[i, "ma150_prev"]) else None
+            ma30_now = float(df.at[i, "ma30"]) if pd.notna(df.at[i, "ma30"]) else None
+            ma30_prev = float(df.at[i, "ma30_prev"]) if pd.notna(df.at[i, "ma30_prev"]) else None
+            close = float(df.at[i, "Close"]) if pd.notna(df.at[i, "Close"]) else None
     except Exception as e:
     stage.append(np.nan)
     continue
