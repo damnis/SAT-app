@@ -58,7 +58,7 @@ def calculate_sat(df):
     prev_stage = 0
 
     for i in range(len(df)):
-    try:
+        try:
         ma150_now = float(df.at[i, "ma150"]) if pd.notna(df.at[i, "ma150"]) else None
         ma150_prev = float(df.at[i, "ma150_prev"]) if pd.notna(df.at[i, "ma150_prev"]) else None
         ma30_now = float(df.at[i, "ma30"]) if pd.notna(df.at[i, "ma30"]) else None
