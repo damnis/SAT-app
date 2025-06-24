@@ -149,8 +149,8 @@ def calculate_sat(df):
     df["Trend"] = df["Stage"].rolling(window=25).mean()
 
     # Advies (koop/verkoop/geen)
-    df["Advies"] = np.where(df["Stage"] == 2, "Koop",
-                      np.where(df["Stage"] <= -2, "Verkoop", "Hou aan"))
+ #   df["Advies"] = np.where(df["Stage"] == 2, "Koop",
+ #                     np.where(df["Stage"] <= -2, "Verkoop", "Hou aan"))
 
     # Rendementberekening
     df["Rendement"] = df["Close"].pct_change().fillna(0)
