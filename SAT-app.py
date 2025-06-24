@@ -24,17 +24,11 @@ def fetch_data(ticker, interval):
     
     df = yf.download(ticker, interval=interval, period=period)
 
-    df = fetch_data(ticker, interval)
-if df is not None:
-    df = calculate_sat(df)
-    df, huidig_advies = determine_advice(df, threshold=thresh)
-else:
-    st.stop()
-    
+       
     # Controleer of download gelukt is
     if df.empty:
         st.error("Geen data gevonden voor deze combinatie van ticker en interval.")
-    return None
+        return None
 
     # Alleen geldige rijen houden
     df = df[
