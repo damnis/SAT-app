@@ -46,7 +46,8 @@ def calculate_sat(df):
 
     condlist = [
         # stage 3.1
-        ((ma150 > ma150_prev) & (c > ma150) & (ma30 > c)) | ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c)),
+        ((ma150 > ma150_prev) & 
+         (c > ma150) & (ma30 > c)) | ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c)),
         # stage 1.1
         (ma150 < ma150_prev) & (c < ma150) & (c > ma30) & (ma30 > ma30_prev),
         # stage 3.3
