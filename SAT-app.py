@@ -319,6 +319,7 @@ thresh = st.slider("Gevoeligheid van trendverandering", 0.005, 1.0, 0.05, step=0
 
 # --- Berekening ---
 df = fetch_data(ticker, interval)
+st.write("Ingelezen kolommen:", df.columns.tolist())
 df = calculate_sat(df)
 df, huidig_advies = determine_advice(df, threshold=thresh)
 
