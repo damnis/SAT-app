@@ -57,9 +57,9 @@ def calculate_sat(df):
 #    df.columns = [str(col) for col in df.columns]
 
     # Controleer op aanwezigheid van kolommen
-    required_cols = {"Close", "Open", "High", "Low"}
-    if not required_cols.issubset(df.columns):
-        raise ValueError(f"Ontbrekende kolommen in de data: {required_cols - set(df.columns)}")
+ #   required_cols = {"Close", "Open", "High", "Low"}
+#    if not required_cols.issubset(df.columns):
+ #       raise ValueError(f"Ontbrekende kolommen in de data: {required_cols - set(df.columns)}")
 
     close = df["Close"]
 
