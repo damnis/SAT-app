@@ -45,6 +45,12 @@ def fetch_data(ticker, interval):
 # -----------------------
 # SAT-indicator
 # -----------------------
+df = fetch_data(ticker, interval)
+if df is not None:
+    df = calculate_sat(df)
+    df, huidig_advies = determine_advice(df, threshold=thresh)
+else:
+    st.stop()
 def calculate_sat(df):
     df = df.copy()
 
