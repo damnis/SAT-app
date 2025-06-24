@@ -55,7 +55,7 @@ import numpy as np
 def calculate_sat(df):
     required_cols = {"Close"}
     if not required_cols.issubset(df.columns):
-        raise ValueError("Ontbrekende kolommen in de data: {required_cols - set(df.columns)}")
+        raise ValueError(f"Ontbrekende kolommen in de data: {required_cols - set(df.columns)}")
 
     c = df["Close"]
     ma150 = c.rolling(window=150).mean()
