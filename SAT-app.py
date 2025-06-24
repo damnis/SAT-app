@@ -44,6 +44,7 @@ def fetch_data(ticker, interval):
     return df
 
 # --- SAT Indicator ---
+# --- SAT Indicator ---
 def calculate_sat(df):
     # Bereken voortschrijdende gemiddelden
     ma150 = df["Close"].rolling(window=150).mean()
@@ -57,52 +58,47 @@ def calculate_sat(df):
     stage = []
     prev_stage = 0
 
-for i in range(len(df)):
-    try:
+    for i in range(len(df)):
+        try:
             ma150_now = float(df.at[i, "ma150"]) if pd.notna(df.at[i, "ma150"]) else None
             ma150_prev = float(df.at[i, "ma150_prev"]) if pd.notna(df.at[i, "ma150_prev"]) else None
             ma30_now = float(df.at[i, "ma30"]) if pd.notna(df.at[i, "ma30"]) else None
             ma30_prev = float(df.at[i, "ma30_prev"]) if pd.notna(df.at[i, "ma30_prev"]) else None
             close = float(df.at[i, "Close"]) if pd.notna(df.at[i, "Close"]) else None
-    except Exception as e:
+        except Exception as e:
             stage.append(np.nan)
-    continue
- #       row = df.iloc[i]
+            continue
 
- #       ma150_now = float(row["ma150"]) if pd.notna(row["ma150"]) else None
-  #      ma150_prev = float(row["ma150_prev"]) if pd.notna(row["ma150_prev"]) else None
- #       ma30_now = float(row["ma30"]) if pd.notna(row["ma30"]) else None
-  #      ma30_prev = float(row["ma30_prev"]) if pd.notna(row["ma30_prev"]) else None
-  #      close = float(row["Close"]) if pd.notna(row["Close"]) else None
+        if None in [ma150_now, ma150_prev, ma30_now, ma30_prev, close]:
+            stage.append(np.nan)
+            continue
 
-#        if None in [ma150_now, ma150_prev, ma30_now, ma30_prev, close]:
- #           stage.append(np.nan)
-  #          continue
-    if (ma150_now > ma150_prev and close > ma150_now and 
+        if (ma150_now > ma150_prev and close > ma150_now and 
             (ma30_now > close or (ma30_now < ma30_prev and ma30_now > close))):
             stage_value = -1  # Stage 3.1
-    elif (ma150_now < ma150_prev and close < ma150_now and 
+        elif (ma150_now < ma150_prev and close < ma150_now and 
               close > ma30_now and ma30_now > ma30_prev):
             stage_value = 1   # Stage 1.1
-    elif (ma150_now > close and ma150_now > ma150_prev):
+        elif (ma150_now > close and ma150_now > ma150_prev):
             stage_value = -1  # Stage 3.3
-    elif (ma150_now > close and ma150_now < ma150_prev):
+        elif (ma150_now > close and ma150_now < ma150_prev):
             stage_value = -2  # Stage 4
-    elif (ma150_now < close and ma150_now < ma150_prev and 
+        elif (ma150_now < close and ma150_now < ma150_prev and 
               ma30_now > ma30_prev):
             stage_value = 1   # Stage 1.3
-    elif (ma150_now < close and ma150_now > ma150_prev and 
+        elif (ma150_now < close and ma150_now > ma150_prev and 
               ma30_now > ma30_prev):
             stage_value = 2   # Stage 2
-    else:
-        stage_value = prev_stage  # Zelfde als vorige
+        else:
+            stage_value = prev_stage  # Zelfde als vorige
 
-    prev_stage = stage_value
-    stage.append(stage_value)
+        prev_stage = stage_value
+        stage.append(stage_value)
 
-df["Stage"] = stage
-df["Trend"] = pd.Series(stage).rolling(window=25).mean()
-return df
+    df["Stage"] = stage
+    df["Trend"] = pd.Series(stage).rolling(window=25).mean()
+
+    return df
     
 
 
