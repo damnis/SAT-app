@@ -84,17 +84,17 @@ def calculate_sat(df):
     elif (ma150_now < ma150_prev and close < ma150_now and 
               close > ma30_now and ma30_now > ma30_prev):
             stage_value = 1   # Stage 1.1
-        elif (ma150_now > close and ma150_now > ma150_prev):
+    elif (ma150_now > close and ma150_now > ma150_prev):
             stage_value = -1  # Stage 3.3
-        elif (ma150_now > close and ma150_now < ma150_prev):
+    elif (ma150_now > close and ma150_now < ma150_prev):
             stage_value = -2  # Stage 4
-        elif (ma150_now < close and ma150_now < ma150_prev and 
+    elif (ma150_now < close and ma150_now < ma150_prev and 
               ma30_now > ma30_prev):
             stage_value = 1   # Stage 1.3
-        elif (ma150_now < close and ma150_now > ma150_prev and 
+    elif (ma150_now < close and ma150_now > ma150_prev and 
               ma30_now > ma30_prev):
             stage_value = 2   # Stage 2
-        else:
+    else:
             stage_value = prev_stage  # Zelfde als vorige
 
         prev_stage = stage_value
