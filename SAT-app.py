@@ -33,17 +33,56 @@ def fetch_data(ticker, interval):
 # -----------------------
 def calculate_sat(df):
     df = df.copy()
-    df["range"] = df["High"] - df["Low"]
-    df["body"] = abs(df["Close"] - df["Open"])
-    df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
-    df["volatiliteit"] = df["range"].rolling(window=14).mean()
-    df["SAT"] = (
-        df["direction"] *
-        (df["body"] / df["range"].replace(0, np.nan)) *
-        (df["range"] / df["volatiliteit"].replace(0, np.nan))
-    )
-    df["SAT"].fillna(0, inplace=True)
+    df["MA150"] = df["Close"].rolling(window=150).mean()
+    df["MA30"] = df["Close"].rolling(window=30).mean()
+    df["MA150_prev"] = df["MA150"].shift(1)
+    df["MA30_prev"] = df["MA30"].shift(1)
+
+    c = df["Close"]
+    ma150 = df["MA150"]
+    ma150_prev = df["MA150_prev"]
+    ma30 = df["MA30"]
+    ma30_prev = df["MA30_prev"]
+
+    condlist = [
+        # stage 3.1
+        ((ma150 > ma150_prev) & (c > ma150) & (ma30 > c)) | ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c)),
+        # stage 1.1
+        (ma150 < ma150_prev) & (c < ma150) & (c > ma30) & (ma30 > ma30_prev),
+        # stage 3.3
+        (ma150 > c) & (ma150 > ma150_prev),
+        # stage 4
+        (ma150 > c) & (ma150 < ma150_prev),
+        # stage 1.3
+        (ma150 < c) & (ma150 < ma150_prev) & (ma30 > ma30_prev),
+        # stage 2
+        (ma150 < c) & (ma150 > ma150_prev) & (ma30 > ma30_prev),
+    ]
+
+    choicelist = [-1, 1, -1, -2, 1, 2]
+
+    df["Stage"] = np.select(condlist, choicelist, default=np.nan)
+
+    # Vul lege waarden met vorige waarde
+    df["Stage"] = df["Stage"].ffill()
+
+    # Bepaal Trend als MA(25) van Stage
+    df["Trend"] = df["Stage"].rolling(window=25).mean()
+
     return df
+#def calculate_sat(df):
+#    df = df.copy()
+#    df["range"] = df["High"] - df["Low"]
+ #   df["body"] = abs(df["Close"] - df["Open"])
+ #   df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
+ #   df["volatiliteit"] = df["range"].rolling(window=14).mean()
+#    df["SAT"] = (
+#        df["direction"] *
+ #       (df["body"] / df["range"].replace(0, np.nan)) *
+ #       (df["range"] / df["volatiliteit"].replace(0, np.nan))
+#    )
+ #   df["SAT"].fillna(0, inplace=True)
+ #   return df
 
 # -----------------------
 # Advies en rendement
