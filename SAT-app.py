@@ -53,6 +53,7 @@ import numpy as np
 
 
 def calculate_sat(df):
+    st.write("Kolommen in df:", df.columns.tolist())
     required_cols = {"Close"}
     if not required_cols.issubset(df.columns):
         raise ValueError(f"Ontbrekende kolommen in de data: {required_cols - set(df.columns)}")
