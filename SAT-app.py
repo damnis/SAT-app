@@ -66,7 +66,7 @@ for i in range(len(df)):
             close = float(df.at[i, "Close"]) if pd.notna(df.at[i, "Close"]) else None
     except Exception as e:
             stage.append(np.nan)
-continue
+        continue
  #       row = df.iloc[i]
 
  #       ma150_now = float(row["ma150"]) if pd.notna(row["ma150"]) else None
