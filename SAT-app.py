@@ -34,60 +34,48 @@ def fetch_data(ticker, interval):
 def calculate_sat(df):
     df = df.copy()
 
+    # Fix voor vreemde kolomnamen (zoals tuples)
+    df.columns = [str(col) for col in df.columns]
+
     # Zorg dat 'Close' een Series is
-    close = df["Close"].squeeze()
+    if "Close" not in df.columns:
+        raise ValueError("Kolom 'Close' ontbreekt in de DataFrame")
 
-    # Moving Averages
-    df["MA150"] = close.rolling(window=150).mean()
-    df["MA150_prev"] = df["MA150"].shift(1)
-    df["MA30"] = close.rolling(window=30).mean()
-    df["MA30_prev"] = df["MA30"].shift(1)
+    close = df["Close"]
 
-    # Hulpvariabelen (allemaal Series)
-    c = df["Close"]
-    ma150 = df["MA150"]
-    ma150_prev = df["MA150_prev"]
-    ma30 = df["MA30"]
-    ma30_prev = df["MA30_prev"]
+    # Moving averages
+    ma150 = close.rolling(window=150).mean()
+    ma150_prev = ma150.shift(1)
+    ma30 = close.rolling(window=30).mean()
+    ma30_prev = ma30.shift(1)
 
-    # Voorwaarden per stage (elk gevuld met False waar nodig)
+    # Stage condities - elk .fillna(False) om NaN's uit te sluiten
     cond_stage_3_1 = (
-        ((ma150 > ma150_prev) & (c > ma150) & (ma30 > c)) |
-        ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c))
+        ((ma150 > ma150_prev) & (close > ma150) & (ma30 > close)) |
+        ((close > ma150) & (ma30 < ma30_prev) & (ma30 > close))
     ).fillna(False)
 
     cond_stage_1_1 = (
-        (ma150 < ma150_prev) & (c < ma150) & (c > ma30) & (ma30 > ma30_prev)
+        (ma150 < ma150_prev) & (close < ma150) & (close > ma30) & (ma30 > ma30_prev)
     ).fillna(False)
 
-    cond_stage_3_3 = (
-        (ma150 > c) & (ma150 > ma150_prev)
-    ).fillna(False)
+    cond_stage_3_3 = ((ma150 > close) & (ma150 > ma150_prev)).fillna(False)
+    cond_stage_4   = ((ma150 > close) & (ma150 < ma150_prev)).fillna(False)
+    cond_stage_1_3 = ((ma150 < close) & (ma150 < ma150_prev) & (ma30 > ma30_prev)).fillna(False)
+    cond_stage_2   = ((ma150 < close) & (ma150 > ma150_prev) & (ma30 > ma30_prev)).fillna(False)
 
-    cond_stage_4 = (
-        (ma150 > c) & (ma150 < ma150_prev)
-    ).fillna(False)
-
-    cond_stage_1_3 = (
-        (ma150 < c) & (ma150 < ma150_prev) & (ma30 > ma30_prev)
-    ).fillna(False)
-
-    cond_stage_2 = (
-        (ma150 < c) & (ma150 > ma150_prev) & (ma30 > ma30_prev)
-    ).fillna(False)
-
+    # Keuzelijst
     condlist = [cond_stage_3_1, cond_stage_1_1, cond_stage_3_3, cond_stage_4, cond_stage_1_3, cond_stage_2]
     choicelist = [-1, 1, -1, -2, 1, 2]
 
-    # Stage logica
+    # Toevoegen aan df
     df["Stage"] = np.select(condlist, choicelist, default=np.nan)
     df["Stage"] = df["Stage"].ffill()
 
-    # Trend = voortschrijdend gemiddelde van Stage
+    # Trend
     df["Trend"] = df["Stage"].rolling(window=25).mean()
 
     return df
-
 
 def determine_advice(df, threshold=0.05):
     df = df.copy()
