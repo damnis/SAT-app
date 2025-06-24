@@ -200,9 +200,18 @@ st.subheader("Laatste signalen en rendement")
 
 kolommen = ["Close", "Advies", "SAT", "Trend", "Markt-%", "SAT-%"]
 tabel = df[kolommen].dropna().tail(30).copy()
+#tabel.index = pd.to_datetime(tabel.index, errors="coerce")
+# Afronden van relevante kolommen
+tabel["Close"] = tabel["Close"].round(2)
+tabel["SAT"] = tabel["SAT"].round(2)
+tabel["Trend"] = tabel["Trend"].round(2)
+
+# Datumkolom en volgorde
 tabel.index = pd.to_datetime(tabel.index, errors="coerce")
 tabel["Datum"] = tabel.index.strftime("%d-%m-%Y")
 tabel = tabel[["Datum"] + kolommen]
+#tabel["Datum"] = tabel.index.strftime("%d-%m-%Y")
+#tabel = tabel[["Datum"] + kolommen]
 tabel["Markt-%"] = (tabel["Markt-%"].astype(float) * 100).map("{:+.2f}%".format)
 tabel["SAT-%"] = (tabel["SAT-%"].astype(float) * 100).map("{:+.2f}%".format)
 
