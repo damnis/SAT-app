@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 # -----------------------
 # DATA OPHALEN
 # -----------------------
+# DATA OPHALEN
+# -----------------------
 def fetch_data(ticker, interval):
     if interval == "15m":
         period = "7d"
@@ -18,29 +20,41 @@ def fetch_data(ticker, interval):
         period = "360d"
     else:
         period = "360wk"
+    
     df = yf.download(ticker, interval=interval, period=period)
+
+    # Controleer of download gelukt is
+    if df.empty:
+        st.error("Geen data gevonden voor deze combinatie van ticker en interval.")
+        return None
+
+    # Alleen geldige rijen houden
     df = df[
         (df["Volume"] > 0) &
         ((df["Open"] != df["Close"]) | (df["High"] != df["Low"]))
     ]
+
+    # Zorg voor correcte tijdindex
     if not isinstance(df.index, pd.DatetimeIndex):
         df.index = pd.to_datetime(df.index, errors="coerce")
     df = df[~df.index.isna()]
-    return df
+    
+    return df if not df.empty else None
+
 
 # -----------------------
 # SAT-indicator
 # -----------------------
-
 def calculate_sat(df):
     df = df.copy()
 
-    # Fix voor vreemde kolomnamen (zoals tuples)
+    # Kolomnamen normaliseren naar strings
     df.columns = [str(col) for col in df.columns]
 
-    # Zorg dat 'Close' een Series is
-    if "Close" not in df.columns:
-        raise ValueError("Kolom 'Close' ontbreekt in de DataFrame")
+    # Controleer op aanwezigheid van kolommen
+    required_cols = {"Close", "Open", "High", "Low"}
+    if not required_cols.issubset(df.columns):
+        raise ValueError(f"Ontbrekende kolommen in de data: {required_cols - set(df.columns)}")
 
     close = df["Close"]
 
@@ -50,7 +64,6 @@ def calculate_sat(df):
     ma30 = close.rolling(window=30).mean()
     ma30_prev = ma30.shift(1)
 
-    # Stage condities - elk .fillna(False) om NaN's uit te sluiten
     cond_stage_3_1 = (
         ((ma150 > ma150_prev) & (close > ma150) & (ma30 > close)) |
         ((close > ma150) & (ma30 < ma30_prev) & (ma30 > close))
@@ -65,16 +78,26 @@ def calculate_sat(df):
     cond_stage_1_3 = ((ma150 < close) & (ma150 < ma150_prev) & (ma30 > ma30_prev)).fillna(False)
     cond_stage_2   = ((ma150 < close) & (ma150 > ma150_prev) & (ma30 > ma30_prev)).fillna(False)
 
-    # Keuzelijst
     condlist = [cond_stage_3_1, cond_stage_1_1, cond_stage_3_3, cond_stage_4, cond_stage_1_3, cond_stage_2]
     choicelist = [-1, 1, -1, -2, 1, 2]
 
-    # Toevoegen aan df
     df["Stage"] = np.select(condlist, choicelist, default=np.nan)
     df["Stage"] = df["Stage"].ffill()
 
-    # Trend
+    # Trend berekening
     df["Trend"] = df["Stage"].rolling(window=25).mean()
+
+    # SAT-berekening toevoegen
+    df["range"] = df["High"] - df["Low"]
+    df["body"] = abs(df["Close"] - df["Open"])
+    df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
+    df["volatiliteit"] = df["range"].rolling(window=14).mean()
+    df["SAT"] = (
+        df["direction"] *
+        (df["body"] / df["range"].replace(0, np.nan)) *
+        (df["range"] / df["volatiliteit"].replace(0, np.nan))
+    )
+    df["SAT"].fillna(0, inplace=True)
 
     return df
 
