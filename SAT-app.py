@@ -103,7 +103,8 @@ stage.append(stage_value)
 df["Stage"] = stage
 df["Trend"] = pd.Series(stage).rolling(window=25).mean()
 
-return df
+
+    return df
     
 
 
