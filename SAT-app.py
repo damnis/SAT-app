@@ -82,10 +82,67 @@ def determine_advice(df, threshold):
 st.title("📈 SAT Volatiliteitsindicator")
 
 # --- Tickerselecties ---
-aex_tickers = {...}  # zelfde als in SAM
-dow_tickers = {...}
-nasdaq_tickers = {...}
-ustech_tickers = {...}
+# --- Volledige tickerlijsten ---
+aex_tickers = {
+    "ABN.AS": "ABN AMRO",
+    "ADYEN.AS": "Adyen",
+    "AGN.AS": "Aegon",
+    "AD.AS": "Ahold Delhaize",
+    "AKZA.AS": "Akzo Nobel",
+    "MT.AS": "ArcelorMittal",
+    "ASM.AS": "ASMI",
+    "ASML.AS": "ASML",
+    "ASRNL.AS": "ASR Nederland",
+    "BESI.AS": "BESI",
+    "DSFIR.AS": "DSM-Firmenich",
+    "GLPG.AS": "Galapagos",
+    "HEIA.AS": "Heineken",
+    "IMCD.AS": "IMCD",
+    "INGA.AS": "ING Groep",
+    "TKWY.AS": "Just Eat Takeaway",
+    "KPN.AS": "KPN",
+    "NN.AS": "NN Group",
+    "PHIA.AS": "Philips",
+    "PRX.AS": "Prosus",
+    "RAND.AS": "Randstad",
+    "REN.AS": "Relx",
+    "SHELL.AS": "Shell",
+    "UNA.AS": "Unilever",
+    "WKL.AS": "Wolters Kluwer"
+}
+
+dow_tickers = {
+    'MMM': '3M', 'AXP': 'American Express', 'AMGN': 'Amgen', 'AAPL': 'Apple', 'BA': 'Boeing',
+    'CAT': 'Caterpillar', 'CVX': 'Chevron', 'CSCO': 'Cisco', 'KO': 'Coca-Cola', 'DIS': 'Disney',
+    'GS': 'Goldman Sachs', 'HD': 'Home Depot', 'HON': 'Honeywell', 'IBM': 'IBM', 'INTC': 'Intel',
+    'JPM': 'JPMorgan Chase', 'JNJ': 'Johnson & Johnson', 'MCD': 'McDonald’s', 'MRK': 'Merck',
+    'MSFT': 'Microsoft', 'NKE': 'Nike', 'PG': 'Procter & Gamble', 'CRM': 'Salesforce',
+    'TRV': 'Travelers', 'UNH': 'UnitedHealth', 'VZ': 'Verizon', 'V': 'Visa', 'WMT': 'Walmart',
+    'DOW': 'Dow', 'RTX': 'RTX Corp.', 'WBA': 'Walgreens Boots'
+}
+nasdaq_tickers = {
+    'MSFT': 'Microsoft', 'NVDA': 'NVIDIA', 'AAPL': 'Apple', 'AMZN': 'Amazon', 'META': 'Meta',
+    'NFLX': 'Netflix', 'GOOG': 'Google', 'GOOGL': 'Alphabet', 'TSLA': 'Tesla', 'CSCO': 'Cisco',
+    'INTC': 'Intel', 'ADBE': 'Adobe', 'CMCSA': 'Comcast', 'PEP': 'PepsiCo', 'COST': 'Costco',
+    'AVGO': 'Broadcom', 'QCOM': 'Qualcomm', 'TMUS': 'T-Mobile', 'TXN': 'Texas Instruments',
+    'AMAT': 'Applied Materials'
+}
+
+ustech_tickers = {
+    "SMCI": "Super Micro Computer",
+    "PLTR": "Palantir",
+    "SNOW": "Snowflake",
+    "NVDA": "NVIDIA",
+    "AMD": "AMD",
+    "MDB": "MongoDB",
+    "DDOG": "Datadog",
+    "CRWD": "CrowdStrike",
+    "ZS": "Zscaler",
+    "TSLA": "Tesla",
+    "AAPL": "Apple",
+    "GOOGL": "Alphabet (GOOGL)",
+    "MSFT": "Microsoft"
+}
 
 tab_labels = ["🇺🇸 Dow Jones", "🇺🇸 Nasdaq", "🇺🇸 US Tech", "🇳🇱 AEX"]
 selected_tab = st.radio("Kies beurs", tab_labels, horizontal=True)
