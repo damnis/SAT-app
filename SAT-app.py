@@ -36,21 +36,24 @@ import pandas as pd
 
 def calculate_sat(df):
     df = df.copy()
-    
+
+    # Zorg dat 'Close' een Series is
+    close = df["Close"].squeeze()
+
     # Moving Averages
-    df["MA150"] = df["Close"].rolling(window=150).mean()
+    df["MA150"] = close.rolling(window=150).mean()
     df["MA150_prev"] = df["MA150"].shift(1)
-    df["MA30"] = df["Close"].rolling(window=30).mean()
+    df["MA30"] = close.rolling(window=30).mean()
     df["MA30_prev"] = df["MA30"].shift(1)
 
-    # Hulpvariabelen
+    # Hulpvariabelen (allemaal Series)
     c = df["Close"]
     ma150 = df["MA150"]
     ma150_prev = df["MA150_prev"]
     ma30 = df["MA30"]
     ma30_prev = df["MA30_prev"]
 
-    # Voorwaarden per stage
+    # Voorwaarden per stage (elk gevuld met False waar nodig)
     cond_stage_3_1 = (
         ((ma150 > ma150_prev) & (c > ma150) & (ma30 > c)) |
         ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c))
@@ -79,10 +82,8 @@ def calculate_sat(df):
     condlist = [cond_stage_3_1, cond_stage_1_1, cond_stage_3_3, cond_stage_4, cond_stage_1_3, cond_stage_2]
     choicelist = [-1, 1, -1, -2, 1, 2]
 
-    # Bereken de stage
+    # Stage logica
     df["Stage"] = np.select(condlist, choicelist, default=np.nan)
-
-    # Vul ontbrekende stage op met vorige waarde
     df["Stage"] = df["Stage"].ffill()
 
     # Trend = voortschrijdend gemiddelde van Stage
