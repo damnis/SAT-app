@@ -118,7 +118,7 @@ def determine_advice(df, threshold):
 # UI - Streamlit
 # -----------------------
 
-st.title("ðŸ“ˆ SAT Volatiliteitsindicator")
+st.title("SAT Volatiliteitsindicator")
 
 # --- Tickerselecties ---
 # --- Volledige tickerlijsten ---
