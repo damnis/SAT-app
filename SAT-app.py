@@ -52,7 +52,9 @@ def calculate_sat(df):
     df = df.copy()
 
     # Kolomnamen normaliseren naar strings
-    df.columns = [str(col) for col in df.columns]
+    # Maak kolomnamen lowercase en verwijder eventuele extra index
+    df.columns = [str(col).strip().capitalize() for col in df.columns]
+#    df.columns = [str(col) for col in df.columns]
 
     # Controleer op aanwezigheid van kolommen
     required_cols = {"Close", "Open", "High", "Low"}
