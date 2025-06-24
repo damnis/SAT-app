@@ -92,50 +92,120 @@ st.write("Kolomnamen in df na bewerking:", df.columns.tolist())
     # Trend berekening
     df["Trend"] = df["Stage"].rolling(window=25).mean()
 
-    # SAT-berekening toevoegen
-    df["range"] = df["High"] - df["Low"]
-    df["body"] = abs(df["Close"] - df["Open"])
-    df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
-    df["volatiliteit"] = df["range"].rolling(window=14).mean()
-    df["SAT"] = (
-        df["direction"] *
-        (df["body"] / df["range"].replace(0, np.nan)) *
-        (df["range"] / df["volatiliteit"].replace(0, np.nan))
-    )
-    df["SAT"].fillna(0, inplace=True)
+import streamlit as st
+import pandas as pd
+import numpy as np
+import yfinance as yf
+import datetime
+import plotly.graph_objects as go
+
+# ---------------------------
+# SAT-indicator berekening
+# ---------------------------
+def calculate_sat(df):
+    # Normaliseer kolomnamen
+    df.columns = [col[0] if isinstance(col, tuple) else col for col in df.columns]
+    df.columns = [str(c).strip().capitalize() for c in df.columns]
+
+    # Vereiste kolommen
+    required_cols = {"Close", "Open", "High", "Low"}
+    missing_cols = required_cols - set(df.columns)
+
+    # Voeg lege kolommen toe indien nodig
+    for col in missing_cols:
+        df[col] = np.nan
+
+    # SAT-berekening
+    c = df["Close"]
+    ma150 = c.rolling(window=150).mean()
+    ma30 = c.rolling(window=30).mean()
+    ma150_prev = ma150.shift(1)
+    ma30_prev = ma30.shift(1)
+
+    conditions = [
+        # stage 3.1
+        ((ma150 > ma150_prev) & (c > ma150) & (ma30 > c)) |
+        ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c)),
+
+        # stage 1.1
+        (ma150 < ma150_prev) & (c < ma150) & (c > ma30) & (ma30 > ma30_prev),
+
+        # stage 3.3
+        (ma150 > c) & (ma150 > ma150_prev),
+
+        # stage 4
+        (ma150 > c) & (ma150 < ma150_prev),
+
+        # stage 1.3
+        (ma150 < c) & (ma150 < ma150_prev) & (ma30 > ma30_prev),
+
+        # stage 2
+        (ma150 < c) & (ma150 > ma150_prev) & (ma30 > ma30_prev),
+    ]
+
+    choices = [-1, 1, -1, -2, 1, 2]
+    df["Stage"] = np.select(conditions, choices, default=np.nan)
+    df["Stage"] = df["Stage"].fillna(method="ffill")
+    df["Trend"] = df["Stage"].rolling(window=25).mean()
+
+    # Advies (koop/verkoop/geen)
+    df["Advies"] = np.where(df["Stage"] == 2, "Koop",
+                      np.where(df["Stage"] <= -2, "Verkoop", "Hou aan"))
+
+    # Rendementberekening
+    df["Rendement"] = df["Close"].pct_change().fillna(0)
+    df["Cumulatief"] = (1 + np.where(df["Advies"] == "Koop", df["Rendement"], 0)).cumprod()
 
     return df
 
-def determine_advice(df, threshold=0.05):
-    df = df.copy()
-    df["TrendChange"] = df["Trend"] - df["Trend"].shift(1)
-    df["Advies"] = np.nan
-    df.loc[df["TrendChange"] > threshold, "Advies"] = "Kopen"
-    df.loc[df["TrendChange"] < -threshold, "Advies"] = "Verkopen"
-    df["Advies"] = df["Advies"].ffill()
+# ---------------------------
+# Streamlit Interface
+# ---------------------------
+#st.set_page_config(page_title="SAT Indicator", layout="wide")
+#st.title("📈 SAT Indicator")
 
-    # Groepen maken per advies
-    df["AdviesGroep"] = (df["Advies"] != df["Advies"].shift()).cumsum()
-    
-    rendementen = []
-    sat_rendementen = []
+# Sidebar
+#st.sidebar.header("Instellingen")
+#ticker = st.sidebar.text_input("Ticker", value="AAPL")
+#start = st.sidebar.date_input("Startdatum", value=datetime.date(2020, 1, 1))
+#end = st.sidebar.date_input("Einddatum", value=datetime.date.today())
 
-    for _, groep in df.groupby("AdviesGroep"):
-        start = groep["Close"].iloc[0]
-        eind = groep["Close"].iloc[-1]
-        advies = groep["Advies"].iloc[0]
-        markt_rendement = (eind - start) / start if start != 0 else 0
-        sat_rendement = markt_rendement if advies == "Kopen" else -markt_rendement
-        rendementen.extend([markt_rendement] * len(groep))
-        sat_rendementen.extend([sat_rendement] * len(groep))
+# Data ophalen
+#@st.cache_data
 
-    df["Markt-%"] = rendementen
-    df["SAT-%"] = sat_rendementen
+#def load_data(ticker, start, end):
+#    df = yf.download(ticker, start=start, end=end)
+#    return df
 
-    # Bepaal laatste advies
-    huidig_advies = df["Advies"].dropna().iloc[-1] if df["Advies"].notna().any() else "Niet beschikbaar"
+#df = load_data(ticker, start, end)
 
-    return df, huidig_advies
+#if df.empty:
+#    st.error("Geen data gevonden voor deze ticker en periode.")
+#    st.stop()
+
+# Berekening
+#df = calculate_sat(df)
+
+# Tabs
+#tab1, tab2 = st.tabs(["📊 Grafiek", "📋 Tabel"])
+
+#with tab1:
+#    fig = go.Figure()
+#    fig.add_trace(go.Scatter(x=df.index, y=df["Close"], name="Close", line=dict(color="gray")))
+#    fig.add_trace(go.Scatter(x=df.index, y=df["Stage"], name="Stage", yaxis="y2", line=dict(color="blue")))
+#    fig.add_trace(go.Scatter(x=df.index, y=df["Trend"], name="Trend", yaxis="y2", line=dict(color="orange")))
+#    fig.update_layout(
+ #       title=f"{ticker} - SAT Indicator",
+ #       yaxis=dict(title="Close"),
+ #       yaxis2=dict(title="Stage / Trend", overlaying="y", side="right", showgrid=False, range=[-2.5, 2.5]),
+  #      legend=dict(x=0, y=1),
+#        height=600
+#    )
+#    st.plotly_chart(fig, use_container_width=True)
+
+#with tab2:
+#    st.dataframe(df[["Close", "Stage", "Trend", "Advies", "Cumulatief"]].dropna().round(2))
+
 #def calculate_sat(df):
 #    df = df.copy()
 #    df["range"] = df["High"] - df["Low"]
