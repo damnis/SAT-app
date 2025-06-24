@@ -197,9 +197,11 @@ visible_period = st.sidebar.selectbox(
 
 # --- Beperk data voor weergave in grafiek/tabel ---
 df_filtered = df.tail(visible_period)
-# Zorg dat df_filtered een normale DataFrame is
-df_filtered = df_filtered.copy()
-df_filtered.columns = [col if isinstance(col, str) else col[0] for col in df_filtered.columns]
+# Controleer en reset MultiIndex als die er is
+if isinstance(df_filtered.columns, pd.MultiIndex):
+    df_filtered.columns = ['_'.join(filter(None, col)).strip() for col in df_filtered.columns.values]
+
+# Reset index zodat 'Date' weer gewone kolom is
 df_filtered = df_filtered.reset_index()
 
 st.subheader("Grafiek met SAT Indicator")
