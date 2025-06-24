@@ -209,24 +209,24 @@ st.markdown(
 #st.write("Index:", df_filtered.index)
 #st.line_chart(df_filtered[["Close", "SAT", "Trend"]])
 fig, ax1 = plt.subplots(figsize=(10, 4))
+fig, ax = plt.subplots(figsize=(10, 4))
 
-# --- Nullijn op de x-as ---
-ax1.axhline(0, color="black", linewidth=1)  # Zwarte nullijn op waarde 0
+# Kleuren voor positieve/negatieve SAT
+sat_colors = ["green" if v > 0 else "red" for v in df["SAT"]]
+ax.bar(df.index, df["SAT"], color=sat_colors, label="SAT")
 
-# --- SAT kleuren op basis van waarde ---
-colors = ["green" if val > 0 else "red" for val in df["SAT"]]
-ax1.bar(df.index, df["SAT"], color=colors, label="SAT")
+# Trend-lijn op dezelfde as (géén twinx)
+ax.plot(df.index, df["Trend"], color="blue", label="Trend", linewidth=2)
 
-# --- Trend lijn ---
-ax2 = ax1.twinx()
-ax2.plot(df.index, df["Trend"], color="blue", label="Trend")
+# Nullijn
+ax.axhline(0, color="black", linestyle="--", linewidth=1)
 
-# --- Labels en layout ---
-ax1.set_ylabel("SAT")
-ax2.set_ylabel("Trend")
+# Labels en legenda
+ax.set_ylabel("SAT / Trend (zelfde schaal)")
+ax.set_title("SAT en Trend Indicator")
+ax.legend()
+
 fig.tight_layout()
-
-# --- Toon in Streamlit ---
 st.pyplot(fig)
 
 #fig, ax1 = plt.subplots(figsize=(10, 4))
