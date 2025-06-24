@@ -34,7 +34,7 @@ else:
     # Controleer of download gelukt is
     if df.empty:
         st.error("Geen data gevonden voor deze combinatie van ticker en interval.")
-        return None
+    return None
 
     # Alleen geldige rijen houden
     df = df[
