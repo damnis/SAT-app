@@ -1,95 +1,126 @@
 import streamlit as st
-import yfinance as yf
 import pandas as pd
 import numpy as np
+import yfinance as yf
 import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
-# -------------------------------------------
-# Functie: SAT-indicator volgens originele PRT-logica
-# -------------------------------------------
-def calculate_prt_sat(df):
+st.title("SAT-indicator")
+
+# ---------------------------------
+# Functie om SAT & Trend te berekenen
+# ---------------------------------
+def calculate_sat(df):
     df = df.copy()
-    df["MA150"] = df["Close"].rolling(window=150).mean()
-    df["MA30"] = df["Close"].rolling(window=30).mean()
+    df["ma150"] = df["Close"].rolling(window=150).mean()
+    df["ma30"] = df["Close"].rolling(window=30).mean()
 
     stage = []
     for i in range(len(df)):
-        if i == 0:
+        if i < 150:
             stage.append(np.nan)
             continue
 
-        ma150 = df.loc[df.index[i], "MA150"]
-        ma150_prev = df.loc[df.index[i - 1], "MA150"]
-        ma30 = df.loc[df.index[i], "MA30"]
-        ma30_prev = df.loc[df.index[i - 1], "MA30"]
-        close = df.loc[df.index[i], "Close"]
+        c = df["Close"].iloc[i]
+        ma150 = df["ma150"].iloc[i]
+        ma150_prev = df["ma150"].iloc[i-1]
+        ma30 = df["ma30"].iloc[i]
+        ma30_prev = df["ma30"].iloc[i-1]
 
-        if (
-            ma150 > ma150_prev and close > ma150 and ma30 > close
-            or (close > ma150 and ma30 < ma30_prev and ma30 > close)
-        ):
+        if (ma150 > ma150_prev and c > ma150 and ma30 > c) or (c > ma150 and ma30 < ma30_prev and ma30 > c):
             stage.append(-1)
-        elif ma150 < ma150_prev and close < ma150 and close > ma30 and ma30 > ma30_prev:
+        elif ma150 < ma150_prev and c < ma150 and c > ma30 and ma30 > ma30_prev:
             stage.append(1)
-        elif ma150 > close and ma150 > ma150_prev:
+        elif ma150 > c and ma150 > ma150_prev:
             stage.append(-1)
-        elif ma150 > close and ma150 < ma150_prev:
+        elif ma150 > c and ma150 < ma150_prev:
             stage.append(-2)
-        elif ma150 < close and ma150 < ma150_prev and ma30 > ma30_prev:
+        elif ma150 < c and ma150 < ma150_prev and ma30 > ma30_prev:
             stage.append(1)
-        elif ma150 < close and ma150 > ma150_prev and ma30 > ma30_prev:
+        elif ma150 < c and ma150 > ma150_prev and ma30 > ma30_prev:
             stage.append(2)
         else:
-            stage.append(stage[-1])  # zelfde als vorige waarde
+            stage.append(stage[-1] if stage else np.nan)
 
     df["Stage"] = stage
-    df["Trend"] = pd.Series(stage).rolling(window=25).mean().values
-
+    df["Trend"] = pd.Series(stage).rolling(window=25).mean()
     return df
 
-# -------------------------------------------
-# App
-# -------------------------------------------
-st.title("SAT-indicator (volgens originele PRT-logica)")
+# ---------------------------------
+# Advies en rendement
+# ---------------------------------
+def determine_advice(df, threshold):
+    df = df.copy()
+    df["TrendChange"] = df["Trend"] - df["Trend"].shift(1)
+    df["Advies"] = np.nan
+    df.loc[df["TrendChange"] > threshold, "Advies"] = "Kopen"
+    df.loc[df["TrendChange"] < -threshold, "Advies"] = "Verkopen"
+    df["Advies"] = df["Advies"].ffill()
+    df["AdviesGroep"] = (df["Advies"] != df["Advies"].shift()).cumsum()
 
-ticker = st.text_input("Voer een ticker in", "AAPL")
-interval = st.selectbox("Interval", ["1d", "1wk"], index=0)
+    rendementen = []
+    sat_rendementen = []
+    for _, groep in df.groupby("AdviesGroep"):
+        start = groep["Close"].iloc[0]
+        eind = groep["Close"].iloc[-1]
+        advies = groep["Advies"].iloc[0]
+        markt_rendement = (eind - start) / start
+        sat_rendement = markt_rendement if advies == "Kopen" else -markt_rendement
+        rendementen.extend([markt_rendement] * len(groep))
+        sat_rendementen.extend([sat_rendement] * len(groep))
 
-if interval == "1d":
-    period = "730d"  # ongeveer 2 jaar aan data
-else:
-    period = "10y"
-
-if st.button("Bereken SAT"):
-    data = yf.download(ticker, period=period, interval=interval)
-
-    if data.empty:
-        st.error("Geen data gevonden.")
+    df["Markt-%"] = rendementen
+    df["SAT-%"] = sat_rendementen
+    if df["Advies"].notna().any():
+        huidig_advies = df["Advies"].dropna().iloc[-1]
     else:
-        df = data[["Open", "High", "Low", "Close"]].copy()
-        df = calculate_prt_sat(df)
+        huidig_advies = "Niet beschikbaar"
+    return df, huidig_advies
 
-        st.subheader("Laatste regels van data")
-        st.dataframe(df.tail())
+# ---------------------------------
+# Invoer
+# ---------------------------------
+tab1, tab2 = st.tabs(["SAT Grafiek", "SAT Tabel"])
 
-        # -----------------------------
-        # Grafiek: SAT met kleur op basis van waarde
-        # -----------------------------
-        fig, ax1 = plt.subplots(figsize=(12, 5))
+with st.sidebar:
+    ticker = st.text_input("Ticker", value="AAPL")
+    interval = st.selectbox("Interval", ["1d", "1wk"])
+    gevoeligheid = st.slider("Gevoeligheid (advies)", 0.0, 1.0, 0.1, 0.05)
 
-        # Kleuren voor SAT afhankelijk van positief/negatief
-        colors = ["green" if val > 0 else "red" for val in df["Stage"]]
-        ax1.bar(df.index, df["Stage"], color=colors, label="Stage")
-        ax1.axhline(0, color="black", linewidth=1, linestyle="--")
-        ax1.set_ylabel("Stage")
-        ax1.set_title(f"SAT-indicator voor {ticker}")
+# ---------------------------------
+# Data ophalen
+# ---------------------------------
+periode = "400d" if interval == "1d" else "400wk"
+data = yf.download(ticker, period=periode, interval=interval)
+data.dropna(inplace=True)
 
-        # Plot Trend met dezelfde schaal als Stage
-        ax1.plot(df.index, df["Trend"], color="blue", label="Trend")
+# ---------------------------------
+# Berekening en advies
+# ---------------------------------
+data = calculate_sat(data)
+data, advies = determine_advice(data, threshold=gevoeligheid)
 
-        ax1.legend()
-        st.pyplot(fig)
+# ---------------------------------
+# Tabs
+# ---------------------------------
+with tab1:
+    st.subheader(f"Grafiek SAT & Trend voor {ticker.upper()} ({interval})")
+    fig, ax1 = plt.subplots(figsize=(12, 5))
 
-        st.success("Berekening en grafiek succesvol")
+    stage_pos = data["Stage"].clip(lower=0)
+    stage_neg = data["Stage"].clip(upper=0)
+
+    ax1.bar(data.index, stage_pos, color="green", label="Stage > 0")
+    ax1.bar(data.index, stage_neg, color="red", label="Stage < 0")
+    ax1.axhline(0, color="black", linewidth=0.8)
+    ax1.plot(data.index, data["Trend"], color="blue", label="Trend")
+
+    ax1.set_ylabel("Stage / Trend")
+    ax1.legend(loc="upper left")
+    st.pyplot(fig)
+    st.metric("Laatste Advies", advies)
+
+with tab2:
+    st.subheader("Laatste 100 rijen")
+    st.dataframe(data.tail(100)[["Close", "Stage", "Trend", "Advies", "Markt-%", "SAT-%"]].round(2))
