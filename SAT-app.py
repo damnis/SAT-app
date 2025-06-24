@@ -39,7 +39,7 @@ def calculate_sat(df):
     df.columns = [str(col) for col in df.columns]
 
     # Zorg dat 'Close' een Series is
-    if "close" not in df.columns:
+    if "Close" not in df.columns:
         raise ValueError("Kolom 'Close' ontbreekt in de DataFrame")
 
     close = df["Close"]
