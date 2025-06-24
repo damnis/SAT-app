@@ -15,9 +15,9 @@ def fetch_data(ticker, interval):
     elif interval == "4h":
         period = "60d"
     elif interval == "1d":
-        period = "160d"
+        period = "360d"
     else:
-        period = "160wk"
+        period = "360wk"
     df = yf.download(ticker, interval=interval, period=period)
     df = df[
         (df["Volume"] > 0) &
