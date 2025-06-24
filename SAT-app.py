@@ -199,7 +199,7 @@ visible_period = st.sidebar.selectbox(
 df_filtered = df.tail(visible_period)
 
 st.subheader("Grafiek met SAT Indicator")
-st.line_chart(df_filtered[["close", "SAT", "Trend"]])
+st.line_chart(df_filtered[["Close", "Stage", "Trend"]])
 
 fig, ax1 = plt.subplots(figsize=(10, 4))
 ax1.bar(df.index, df["SAT"], color="orange", label="SAT")
