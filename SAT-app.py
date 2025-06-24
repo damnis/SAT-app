@@ -347,13 +347,12 @@ st.markdown(
 #if isinstance(df_filtered.columns, pd.MultiIndex):
 #    df_filtered.columns = ['_'.join(filter(None, col)).strip() for col in df_filtered.columns.values]
 
-# Reset index zodat 'Date' weer gewone kolom is
-#df_filtered = df_filtered.reset_index()
 
 #st.subheader("Grafiek met SAT Indicator")
 #st.write("Kolomnamen df_filtered:", df_filtered.columns)
 #st.write("Index:", df_filtered.index)
 #st.line_chart(df_filtered[["Close", "SAT", "Trend"]])
+
 fig, ax1 = plt.subplots(figsize=(10, 4))
 fig, ax = plt.subplots(figsize=(10, 4))
 
