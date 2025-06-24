@@ -208,15 +208,35 @@ st.markdown(
 #st.write("Kolomnamen df_filtered:", df_filtered.columns)
 #st.write("Index:", df_filtered.index)
 #st.line_chart(df_filtered[["Close", "SAT", "Trend"]])
-
 fig, ax1 = plt.subplots(figsize=(10, 4))
-ax1.bar(df.index, df["SAT"], color="orange", label="SAT")
+
+# --- Nullijn op de x-as ---
+ax1.axhline(0, color="black", linewidth=1)  # Zwarte nullijn op waarde 0
+
+# --- SAT kleuren op basis van waarde ---
+colors = ["green" if val > 0 else "red" for val in df["SAT"]]
+ax1.bar(df.index, df["SAT"], color=colors, label="SAT")
+
+# --- Trend lijn ---
 ax2 = ax1.twinx()
 ax2.plot(df.index, df["Trend"], color="blue", label="Trend")
+
+# --- Labels en layout ---
 ax1.set_ylabel("SAT")
 ax2.set_ylabel("Trend")
 fig.tight_layout()
+
+# --- Toon in Streamlit ---
 st.pyplot(fig)
+
+#fig, ax1 = plt.subplots(figsize=(10, 4))
+#ax1.bar(df.index, df["SAT"], color="orange", label="SAT")
+#ax2 = ax1.twinx()
+#ax2.plot(df.index, df["Trend"], color="blue", label="Trend")
+#ax1.set_ylabel("SAT")
+#ax2.set_ylabel("Trend")
+#fig.tight_layout()
+#st.pyplot(fig)
 
 # --- Tabel ---
 st.subheader("Laatste signalen en rendement")
