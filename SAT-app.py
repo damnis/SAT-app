@@ -58,17 +58,26 @@ def calculate_sat(df):
     prev_stage = 0
 
     for i in range(len(df)):
-        row = df.iloc[i]
+        try:
+    ma150_now = float(df.at[i, "ma150"]) if pd.notna(df.at[i, "ma150"]) else None
+    ma150_prev = float(df.at[i, "ma150_prev"]) if pd.notna(df.at[i, "ma150_prev"]) else None
+    ma30_now = float(df.at[i, "ma30"]) if pd.notna(df.at[i, "ma30"]) else None
+    ma30_prev = float(df.at[i, "ma30_prev"]) if pd.notna(df.at[i, "ma30_prev"]) else None
+    close = float(df.at[i, "Close"]) if pd.notna(df.at[i, "Close"]) else None
+except Exception as e:
+    stage.append(np.nan)
+    continue
+ #       row = df.iloc[i]
 
-        ma150_now = float(row["ma150"]) if pd.notna(row["ma150"]) else None
-        ma150_prev = float(row["ma150_prev"]) if pd.notna(row["ma150_prev"]) else None
-        ma30_now = float(row["ma30"]) if pd.notna(row["ma30"]) else None
-        ma30_prev = float(row["ma30_prev"]) if pd.notna(row["ma30_prev"]) else None
-        close = float(row["Close"]) if pd.notna(row["Close"]) else None
+ #       ma150_now = float(row["ma150"]) if pd.notna(row["ma150"]) else None
+  #      ma150_prev = float(row["ma150_prev"]) if pd.notna(row["ma150_prev"]) else None
+ #       ma30_now = float(row["ma30"]) if pd.notna(row["ma30"]) else None
+  #      ma30_prev = float(row["ma30_prev"]) if pd.notna(row["ma30_prev"]) else None
+  #      close = float(row["Close"]) if pd.notna(row["Close"]) else None
 
-        if None in [ma150_now, ma150_prev, ma30_now, ma30_prev, close]:
-            stage.append(np.nan)
-            continue
+#        if None in [ma150_now, ma150_prev, ma30_now, ma30_prev, close]:
+ #           stage.append(np.nan)
+  #          continue
 
         if (ma150_now > ma150_prev and close > ma150_now and 
             (ma30_now > close or (ma30_now < ma30_prev and ma30_now > close))):
