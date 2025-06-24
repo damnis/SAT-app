@@ -78,32 +78,32 @@ continue
 #        if None in [ma150_now, ma150_prev, ma30_now, ma30_prev, close]:
  #           stage.append(np.nan)
   #          continue
-    if (ma150_now > ma150_prev and close > ma150_now and 
+if (ma150_now > ma150_prev and close > ma150_now and 
             (ma30_now > close or (ma30_now < ma30_prev and ma30_now > close))):
             stage_value = -1  # Stage 3.1
-    elif (ma150_now < ma150_prev and close < ma150_now and 
+elif (ma150_now < ma150_prev and close < ma150_now and 
               close > ma30_now and ma30_now > ma30_prev):
             stage_value = 1   # Stage 1.1
-    elif (ma150_now > close and ma150_now > ma150_prev):
+elif (ma150_now > close and ma150_now > ma150_prev):
             stage_value = -1  # Stage 3.3
-    elif (ma150_now > close and ma150_now < ma150_prev):
+elif (ma150_now > close and ma150_now < ma150_prev):
             stage_value = -2  # Stage 4
-    elif (ma150_now < close and ma150_now < ma150_prev and 
+elif (ma150_now < close and ma150_now < ma150_prev and 
               ma30_now > ma30_prev):
             stage_value = 1   # Stage 1.3
-    elif (ma150_now < close and ma150_now > ma150_prev and 
+elif (ma150_now < close and ma150_now > ma150_prev and 
               ma30_now > ma30_prev):
             stage_value = 2   # Stage 2
-    else:
+else:
             stage_value = prev_stage  # Zelfde als vorige
 
-    prev_stage = stage_value
-    stage.append(stage_value)
+prev_stage = stage_value
+stage.append(stage_value)
 
-    df["Stage"] = stage
-    df["Trend"] = pd.Series(stage).rolling(window=25).mean()
+df["Stage"] = stage
+df["Trend"] = pd.Series(stage).rolling(window=25).mean()
 
-    return df
+return df
     
 
 
