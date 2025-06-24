@@ -55,7 +55,7 @@ def calculate_sat(df):
 
     # Voorwaarden per stage (elk gevuld met False waar nodig)
     cond_stage_3_1 = (
-        ((ma150 > ma150_prev) & (df["Close"] > ma150) & (ma30 > c)) |
+        ((ma150 > ma150_prev) & ("Close" > ma150) & (ma30 > c)) |
         ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c))
     ).fillna(False)
 
