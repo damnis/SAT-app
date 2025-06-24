@@ -97,8 +97,8 @@ def calculate_sat(df):
     else:
             stage_value = prev_stage  # Zelfde als vorige
 
-        prev_stage = stage_value
-        stage.append(stage_value)
+    prev_stage = stage_value
+    stage.append(stage_value)
 
     df["Stage"] = stage
     df["Trend"] = pd.Series(stage).rolling(window=25).mean()
