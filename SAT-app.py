@@ -55,7 +55,7 @@ def calculate_sat(df):
     # Maak kolomnamen lowercase en verwijder eventuele extra index
     df.columns = [str(col).strip().capitalize() for col in df.columns]
 #    df.columns = [str(col) for col in df.columns]
-st.write("Kolomnamen in df na bewerking:", df.columns.tolist())
+#st.write("Kolomnamen in df na bewerking:", df.columns.tolist())
     # Controleer op aanwezigheid van kolommen
     required_cols = {"Close", "Open", "High", "Low"}
     if not required_cols.issubset(df.columns):
