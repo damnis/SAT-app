@@ -100,9 +100,9 @@ for i in range(len(df)):
     prev_stage = stage_value
     stage.append(stage_value)
 
-    df["Stage"] = stage
-    df["Trend"] = pd.Series(stage).rolling(window=25).mean()
-    return df
+df["Stage"] = stage
+df["Trend"] = pd.Series(stage).rolling(window=25).mean()
+return df
     
 
 
