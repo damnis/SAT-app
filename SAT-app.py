@@ -197,6 +197,10 @@ visible_period = st.sidebar.selectbox(
 
 # --- Beperk data voor weergave in grafiek/tabel ---
 df_filtered = df.tail(visible_period)
+# Zorg dat df_filtered een normale DataFrame is
+df_filtered = df_filtered.copy()
+df_filtered.columns = [col if isinstance(col, str) else col[0] for col in df_filtered.columns]
+df_filtered = df_filtered.reset_index()
 
 st.subheader("Grafiek met SAT Indicator")
 st.write("Kolomnamen df_filtered:", df_filtered.columns)
