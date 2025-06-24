@@ -156,7 +156,7 @@ def determine_advice(df, threshold=0.05):
  #       markt_rendement = (eind - start) / start
   #      sat_rendement = markt_rendement if advies == "Kopen" else -markt_rendement
 #        rendementen.extend([markt_rendement] * len(groep))
-        sat_rendementen.extend([sat_rendement] * len(groep))
+  #      sat_rendementen.extend([sat_rendement] * len(groep))
   #  df["Markt-%"] = rendementen
  #   df["SAT-%"] = sat_rendementen
 #    if "Advies" in df.columns and df["Advies"].notna().any():
