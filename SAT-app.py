@@ -187,27 +187,27 @@ st.markdown(
 
 # --- Grafiek ---
 # --- Instelbare weergaveperiode ---
-st.sidebar.markdown("### Weergaveperiode")
-visible_period = st.sidebar.selectbox(
-    "Toon laatste ...",
-    options=[30, 60, 90, 120, 160, 250],
-    index=3,  # standaard bijv. 120
-    format_func=lambda x: f"{x} candles"
-)
+#st.sidebar.markdown("### Weergaveperiode")
+#visible_period = st.sidebar.selectbox(
+#    "Toon laatste ...",
+ #   options=[30, 60, 90, 120, 160, 250],
+#    index=3,  # standaard bijv. 120
+  #  format_func=lambda x: f"{x} candles"
+#)
 
 # --- Beperk data voor weergave in grafiek/tabel ---
-df_filtered = df.tail(visible_period)
+#df_filtered = df.tail(visible_period)
 # Controleer en reset MultiIndex als die er is
-if isinstance(df_filtered.columns, pd.MultiIndex):
-    df_filtered.columns = ['_'.join(filter(None, col)).strip() for col in df_filtered.columns.values]
+#if isinstance(df_filtered.columns, pd.MultiIndex):
+#    df_filtered.columns = ['_'.join(filter(None, col)).strip() for col in df_filtered.columns.values]
 
 # Reset index zodat 'Date' weer gewone kolom is
-df_filtered = df_filtered.reset_index()
+#df_filtered = df_filtered.reset_index()
 
-st.subheader("Grafiek met SAT Indicator")
-st.write("Kolomnamen df_filtered:", df_filtered.columns)
-st.write("Index:", df_filtered.index)
-st.line_chart(df_filtered[["Close", "SAT", "Trend"]])
+#st.subheader("Grafiek met SAT Indicator")
+#st.write("Kolomnamen df_filtered:", df_filtered.columns)
+#st.write("Index:", df_filtered.index)
+#st.line_chart(df_filtered[["Close", "SAT", "Trend"]])
 
 fig, ax1 = plt.subplots(figsize=(10, 4))
 ax1.bar(df.index, df["SAT"], color="orange", label="SAT")
