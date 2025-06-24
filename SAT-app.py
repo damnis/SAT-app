@@ -207,7 +207,7 @@ df_filtered = df_filtered.reset_index()
 st.subheader("Grafiek met SAT Indicator")
 st.write("Kolomnamen df_filtered:", df_filtered.columns)
 st.write("Index:", df_filtered.index)
-st.line_chart(df_filtered[["Close", "Stage", "Trend"]])
+st.line_chart(df_filtered[["Close", "SAT", "Trend"]])
 
 fig, ax1 = plt.subplots(figsize=(10, 4))
 ax1.bar(df.index, df["SAT"], color="orange", label="SAT")
