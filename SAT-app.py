@@ -48,115 +48,87 @@ def fetch_data(ticker, interval):
 # SAT-indicator
 # -----------------------
 
-def calculate_sat(df):
-    df = df.copy()
+import pandas as pd
+import numpy as np
 
-    # Kolomnamen normaliseren naar strings
-    # Maak kolomnamen lowercase en verwijder eventuele extra index
-    df.columns = [str(col).strip().capitalize() for col in df.columns]
-#    df.columns = [str(col) for col in df.columns]
-#st.write("Kolomnamen in df na bewerking:", df.columns.tolist())
-    # Controleer op aanwezigheid van kolommen
-    required_cols = {"Close", "Open", "High", "Low"}
+
+def calculate_sat(df):
+    required_cols = {"Close"}
     if not required_cols.issubset(df.columns):
         raise ValueError(f"Ontbrekende kolommen in de data: {required_cols - set(df.columns)}")
 
-    close = df["Close"]
-
-    # Moving averages
-    ma150 = close.rolling(window=150).mean()
-    ma150_prev = ma150.shift(1)
-    ma30 = close.rolling(window=30).mean()
-    ma30_prev = ma30.shift(1)
-
-    cond_stage_3_1 = (
-        ((ma150 > ma150_prev) & (close > ma150) & (ma30 > close)) |
-        ((close > ma150) & (ma30 < ma30_prev) & (ma30 > close))
-    ).fillna(False)
-
-    cond_stage_1_1 = (
-        (ma150 < ma150_prev) & (close < ma150) & (close > ma30) & (ma30 > ma30_prev)
-    ).fillna(False)
-
-    cond_stage_3_3 = ((ma150 > close) & (ma150 > ma150_prev)).fillna(False)
-    cond_stage_4   = ((ma150 > close) & (ma150 < ma150_prev)).fillna(False)
-    cond_stage_1_3 = ((ma150 < close) & (ma150 < ma150_prev) & (ma30 > ma30_prev)).fillna(False)
-    cond_stage_2   = ((ma150 < close) & (ma150 > ma150_prev) & (ma30 > ma30_prev)).fillna(False)
-
-    condlist = [cond_stage_3_1, cond_stage_1_1, cond_stage_3_3, cond_stage_4, cond_stage_1_3, cond_stage_2]
-    choicelist = [-1, 1, -1, -2, 1, 2]
-
-    df["Stage"] = np.select(condlist, choicelist, default=np.nan)
-    df["Stage"] = df["Stage"].ffill()
-
-    # Trend berekening
-    df["Trend"] = df["Stage"].rolling(window=25).mean()
-
-import streamlit as st
-import pandas as pd
-import numpy as np
-import yfinance as yf
-import datetime
-import plotly.graph_objects as go
-
-# ---------------------------
-# SAT-indicator berekening
-# ---------------------------
-def calculate_sat(df):
-    # Normaliseer kolomnamen
-    df.columns = [col[0] if isinstance(col, tuple) else col for col in df.columns]
-    df.columns = [str(c).strip().capitalize() for c in df.columns]
-
-    # Vereiste kolommen
-    required_cols = {"Close", "Open", "High", "Low"}
-    missing_cols = required_cols - set(df.columns)
-
-    # Voeg lege kolommen toe indien nodig
-    for col in missing_cols:
-        df[col] = np.nan
-
-    # SAT-berekening
     c = df["Close"]
     ma150 = c.rolling(window=150).mean()
     ma30 = c.rolling(window=30).mean()
     ma150_prev = ma150.shift(1)
     ma30_prev = ma30.shift(1)
 
-    conditions = [
+    condlist = [
         # stage 3.1
-        ((ma150 > ma150_prev) & (c > ma150) & (ma30 > c)) |
-        ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c)),
-
+        ((ma150 > ma150_prev) & (c > ma150) & (ma30 > c)) | ((c > ma150) & (ma30 < ma30_prev) & (ma30 > c)),
         # stage 1.1
         (ma150 < ma150_prev) & (c < ma150) & (c > ma30) & (ma30 > ma30_prev),
-
         # stage 3.3
         (ma150 > c) & (ma150 > ma150_prev),
-
         # stage 4
         (ma150 > c) & (ma150 < ma150_prev),
-
         # stage 1.3
         (ma150 < c) & (ma150 < ma150_prev) & (ma30 > ma30_prev),
-
         # stage 2
         (ma150 < c) & (ma150 > ma150_prev) & (ma30 > ma30_prev),
     ]
 
-    choices = [-1, 1, -1, -2, 1, 2]
-    df["Stage"] = np.select(conditions, choices, default=np.nan)
-    df["Stage"] = df["Stage"].fillna(method="ffill")
-    df["Trend"] = df["Stage"].rolling(window=25).mean()
+    choicelist = [-1, 1, -1, -2, 1, 2]
+    stage = np.select(condlist, choicelist, default=np.nan)
 
-    # Advies (koop/verkoop/geen)
- #   df["Advies"] = np.where(df["Stage"] == 2, "Koop",
- #                     np.where(df["Stage"] <= -2, "Verkoop", "Hou aan"))
-
-    # Rendementberekening
-    df["Rendement"] = df["Close"].pct_change().fillna(0)
-    df["Cumulatief"] = (1 + np.where(df["Advies"] == "Koop", df["Rendement"], 0)).cumprod()
+    df["Stage"] = stage
+    df["Trend"] = pd.Series(stage).rolling(window=25).mean()
 
     return df
+
+
+def determine_advice(df, threshold=0.5):
+    if "Trend" not in df.columns:
+        raise ValueError("Trend kolom ontbreekt in de DataFrame")
+
+    advies = []
+    for i in range(len(df)):
+        trend = df["Trend"].iloc[i]
+        if pd.isna(trend):
+            advies.append("")
+        elif trend > threshold:
+            advies.append("Kopen")
+        elif trend < -threshold:
+            advies.append("Verkopen")
+        else:
+            advies.append("Hold")
+
+    df["Advies"] = advies
+    huidig_advies = advies[-1] if advies else ""
+    return df, huidig_advies
+
+
+def calculate_return(df):
+    if "Advies" not in df.columns:
+        raise ValueError("Advies kolom ontbreekt in de DataFrame")
+
+    df = df.copy()
+    df["Return"] = 0.0
+    pos = False
+    entry = 0.0
+
+    for i in range(1, len(df)):
+        if df["Advies"].iloc[i - 1] == "Kopen" and not pos:
+            entry = df["Close"].iloc[i]
+            pos = True
+        elif df["Advies"].iloc[i - 1] == "Verkopen" and pos:
+            exit_price = df["Close"].iloc[i]
+            df.loc[i, "Return"] = (exit_price - entry) / entry * 100
+            pos = False
+
+    df["CumulatiefRendement"] = df["Return"].cumsum()
+    return df
+
 
 # ---------------------------
 # Streamlit Interface
