@@ -45,39 +45,75 @@ def fetch_data(ticker, interval):
 
 # --- SAT Indicator ---
 def calculate_sat(df):
-    df = df.copy()
-    df["ma150"] = df["Close"].rolling(window=150).mean()
-    df["ma30"] = df["Close"].rolling(window=30).mean()
+    # Bereken voortschrijdende gemiddelden
+    ma150 = df["Close"].rolling(window=150).mean()
+    ma30 = df["Close"].rolling(window=30).mean()
 
-    stage = [0]
-    for i in range(1, len(df)):
-        ma150 = df["ma150"].iloc[i]
-        ma150_prev = df["ma150"].iloc[i - 1]
-        ma30 = df["ma30"].iloc[i]
-        ma30_prev = df["ma30"].iloc[i - 1]
-        close = df["Close"].iloc[i]
+    ma150_prev = ma150.shift(1)
+    ma30_prev = ma30.shift(1)
+    close = df["Close"]
 
-        if (
-            (ma150 > ma150_prev and close > ma150 and ma30 > close) or
-            (close > ma150 and ma30 < ma30_prev and ma30 > close)
-        ):
-            stage.append(-1)
-        elif ma150 < ma150_prev and close < ma150 and close > ma30 and ma30 > ma30_prev:
-            stage.append(1)
-        elif ma150 > close and ma150 > ma150_prev:
-            stage.append(-1)
-        elif ma150 > close and ma150 < ma150_prev:
-            stage.append(-2)
-        elif ma150 < close and ma150 < ma150_prev and ma30 > ma30_prev:
-            stage.append(1)
-        elif ma150 < close and ma150 > ma150_prev and ma30 > ma30_prev:
-            stage.append(2)
+    stage = pd.Series(index=df.index, dtype="float")
+
+    for i in range(len(df)):
+        if i == 0:
+            stage.iloc[i] = 0  # Beginwaarde
         else:
-            stage.append(stage[-1])
+            if (
+                (ma150.iloc[i] > ma150_prev.iloc[i]) and
+                (close.iloc[i] > ma150.iloc[i]) and
+                (
+                    (ma30.iloc[i] > close.iloc[i]) or
+                    ((ma30.iloc[i] < ma30_prev.iloc[i]) and (ma30.iloc[i] > close.iloc[i]))
+                )
+            ):
+                stage.iloc[i] = -1  # Stage 3.1
 
+            elif (
+                (ma150.iloc[i] < ma150_prev.iloc[i]) and
+                (close.iloc[i] < ma150.iloc[i]) and
+                (close.iloc[i] > ma30.iloc[i]) and
+                (ma30.iloc[i] > ma30_prev.iloc[i])
+            ):
+                stage.iloc[i] = 1  # Stage 1.1
+
+            elif (
+                (ma150.iloc[i] > close.iloc[i]) and
+                (ma150.iloc[i] > ma150_prev.iloc[i])
+            ):
+                stage.iloc[i] = -1  # Stage 3.3
+
+            elif (
+                (ma150.iloc[i] > close.iloc[i]) and
+                (ma150.iloc[i] < ma150_prev.iloc[i])
+            ):
+                stage.iloc[i] = -2  # Stage 4
+
+            elif (
+                (ma150.iloc[i] < close.iloc[i]) and
+                (ma150.iloc[i] < ma150_prev.iloc[i]) and
+                (ma30.iloc[i] > ma30_prev.iloc[i])
+            ):
+                stage.iloc[i] = 1  # Stage 1.3
+
+            elif (
+                (ma150.iloc[i] < close.iloc[i]) and
+                (ma150.iloc[i] > ma150_prev.iloc[i]) and
+                (ma30.iloc[i] > ma30_prev.iloc[i])
+            ):
+                stage.iloc[i] = 2  # Stage 2
+
+            else:
+                stage.iloc[i] = stage.iloc[i - 1]  # Zelfde stage als vorige
+
+    # Voeg stage toe aan dataframe
     df["Stage"] = stage
-    df["Trend"] = pd.Series(stage).rolling(window=25).mean().fillna(method="bfill")
+
+    # Bereken AVSTAGE als voortschrijdend gemiddelde van de stage
+    df["Trend"] = stage.rolling(window=25).mean()
+
     return df
+
 
 # --- Ophalen en berekenen ---
 df = fetch_data(ticker, interval)
