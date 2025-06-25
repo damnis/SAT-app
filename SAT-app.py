@@ -36,7 +36,7 @@ def calculate_sat(df):
     df["range"] = df["High"] - df["Low"]
     df["body"] = abs(df["Close"] - df["Open"])
     df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
-    df["volatiliteit"] = df["range"].rolling(window=14).mean()
+    df["volatiliteit"] = df["range"].rolling(window=9).mean()
     df["SAT"] = (
         df["direction"] *
         (df["body"] / df["range"].replace(0, np.nan)) *
