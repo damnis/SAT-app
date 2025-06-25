@@ -33,17 +33,33 @@ def fetch_data(ticker, interval):
 # -----------------------
 def calculate_sat(df):
     df = df.copy()
+
+    # Bereken voorgaande slotkoers
     df["Close_prev"] = df["Close"].shift(1)
+
+    # Verwijder eerste rij met NaN in Close_prev (kan niet gebruikt worden)
+    df = df.dropna(subset=["Close_prev"])
+
+    # Bereken range en body
     df["range"] = df["High"] - df["Low"]
     df["body"] = abs(df["Close_prev"] - df["Open"])
+
+    # Bepaal richting van de candle
     df["direction"] = np.where(df["Close_prev"] > df["Open"], 1, -1)
+
+    # Bereken gemiddelde volatiliteit
     df["volatiliteit"] = df["range"].rolling(window=9).mean()
+
+    # Bereken SAT-score
     df["SAT"] = (
         df["direction"] *
         (df["body"] / df["range"].replace(0, np.nan)) *
         (df["range"] / df["volatiliteit"].replace(0, np.nan))
     )
-    df["SAT"].fillna(0, inplace=True)
+
+    # Vul ontbrekende waarden in SAT met 0
+    df["SAT"] = df["SAT"].fillna(0)
+
     return df
 
 # -----------------------
