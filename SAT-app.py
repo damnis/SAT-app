@@ -18,31 +18,26 @@ def fetch_data(ticker, interval):
     else:
         period = "360wk"
 
-    df = yf.download(ticker, interval=interval, period=period, group_by="ticker", auto_adjust=False)
-    st.write("📦 Kolommen na download:", df.columns.tolist())
-#    df = yf.download(ticker, interval=interval, period=period, group_by="ticker", auto_adjust=False)
+    df = yf.download(ticker, interval=interval, period=period)
 
-    # Fix MultiIndex
+    # ✅ MultiIndex oplossen (zoals bij 'MMM')
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
+        df.columns = df.columns.get_level_values(1)
 
-    # Kolomnamen standaardiseren
-    df.columns = [col.capitalize() for col in df.columns]
-
-    # ❗ Validatie van kolommen vóór je ze gebruikt
+    # ✅ Controle op kolommen
     required = {"Open", "High", "Low", "Close", "Volume"}
     missing = required - set(df.columns)
     if missing:
         st.error(f"Data mist vereiste kolommen: {missing}")
         return None
 
-    # Alleen geldige rijen houden
+    # Filter lege of onbruikbare rijen
     df = df[
         (df["Volume"] > 0) &
         ((df["Open"] != df["Close"]) | (df["High"] != df["Low"]))
     ]
 
-    # Tijdindex controleren
+    # Zorg voor correcte tijdindex
     if not isinstance(df.index, pd.DatetimeIndex):
         df.index = pd.to_datetime(df.index, errors="coerce")
     df = df[~df.index.isna()]
