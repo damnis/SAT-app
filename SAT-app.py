@@ -17,8 +17,9 @@ def fetch_data(ticker, interval):
         period = "360d"
     else:
         period = "360wk"
+
     df = yf.download(ticker, interval=interval, period=period, group_by="ticker", auto_adjust=False)
-st.write("📦 Kolommen na download:", df.columns.tolist())
+    st.write("📦 Kolommen na download:", df.columns.tolist())
 #    df = yf.download(ticker, interval=interval, period=period, group_by="ticker", auto_adjust=False)
 
     # Fix MultiIndex
