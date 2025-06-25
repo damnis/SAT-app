@@ -38,7 +38,7 @@ def calculate_sat(df):
     df["Close_prev"] = df["Close"].shift(1)
 
     # Verwijder eerste rij met NaN in Close_prev (kan niet gebruikt worden)
-    df = df.dropna(subset=["Close_prev"])
+    #df = df.dropna(subset=["Close_prev"])
 
     # Bereken range en body
     df["range"] = df["High"] - df["Low"]
