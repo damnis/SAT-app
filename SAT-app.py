@@ -45,7 +45,7 @@ def fetch_data(ticker, interval):
     
     required = {"Open", "High", "Low", "Close", "Volume"}
     if not required.issubset(df.columns):
-    st.error(f"Data mist vereiste kolommen: {required - set(df.columns)}")
+        st.error(f"Data mist vereiste kolommen: {required - set(df.columns)}")
     return None
 
     return df if not df.empty else None
