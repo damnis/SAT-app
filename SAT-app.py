@@ -79,7 +79,7 @@ def determine_advice(df, threshold):
 # UI - Streamlit
 # -----------------------
 
-st.title("ðŸ“ˆ SAT Volatiliteitsindicator")
+st.title("SAT Volatiliteitsindicator")
 
 # --- Tickerselecties ---
 # --- Volledige tickerlijsten ---
@@ -143,20 +143,25 @@ ustech_tickers = {
     "GOOGL": "Alphabet (GOOGL)",
     "MSFT": "Microsoft"
 }
-
-tab_labels = ["ðŸ‡ºðŸ‡¸ Dow Jones", "ðŸ‡ºðŸ‡¸ Nasdaq", "ðŸ‡ºðŸ‡¸ US Tech", "ðŸ‡³ðŸ‡± AEX"]
+tab_labels = ["🇺🇸 Dow Jones", "🇺🇸 Nasdaq", "🇺🇸 US Tech", "🇳🇱 AEX"]
 selected_tab = st.radio("Kies beurs", tab_labels, horizontal=True)
 
-if selected_tab == "ðŸ‡ºðŸ‡¸ Dow Jones":
-    ticker_label = st.selectbox("Dow Jones aandeel", [f"{k} - {v}" for k, v in dow_tickers.items()])
-elif selected_tab == "ðŸ‡ºðŸ‡¸ Nasdaq":
-    ticker_label = st.selectbox("Nasdaq aandeel", [f"{k} - {v}" for k, v in nasdaq_tickers.items()])
-elif selected_tab == "ðŸ‡ºðŸ‡¸ US Tech":
-    ticker_label = st.selectbox("US Tech aandeel", [f"{k} - {v}" for k, v in ustech_tickers.items()])
-else:
-    ticker_label = st.selectbox("AEX aandeel", [f"{k} - {v}" for k, v in aex_tickers.items()])
+if selected_tab == "🇺🇸 Dow Jones":
+    ticker_label = st.selectbox("Dow Jones aandeel", [f"{k} - {v}" for k, v in dow_tickers.items()], key="dow")
+    ticker, ticker_name = ticker_label.split(" - ", 1)
 
-ticker, ticker_name = ticker_label.split(" - ", 1)
+elif selected_tab == "🇺🇸 Nasdaq":
+    ticker_label = st.selectbox("Nasdaq aandeel", [f"{k} - {v}" for k, v in nasdaq_tickers.items()], key="nasdaq")
+    ticker, ticker_name = ticker_label.split(" - ", 1)
+
+elif selected_tab == "🇺🇸 US Tech":
+    ticker_label = st.selectbox("US Tech aandeel", [f"{k} - {v}" for k, v in ustech_tickers.items()], key="ustech")
+    ticker, ticker_name = ticker_label.split(" - ", 1)
+
+else:  # AEX
+    ticker_label = st.selectbox("AEX aandeel", [f"{k} - {v}" for k, v in aex_tickers.items()], key="aex")
+    ticker, ticker_name = ticker_label.split(" - ", 1)
+
 
 # --- Interval + Slider ---
 interval_optie = st.selectbox("Kies de interval", ["Dagelijks", "Wekelijks", "4-uur", "1-uur", "15-minuten"])
