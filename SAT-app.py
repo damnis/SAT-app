@@ -20,16 +20,18 @@ def fetch_data(ticker, interval):
     
     df = yf.download(ticker, interval=interval, period=period, group_by="ticker", auto_adjust=False)
 
-    # Fix: als MultiIndex, vlakken we af naar enkelvoudige kolomnamen
+    # Fix MultiIndex
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
-    # Kolommen uniformiseren (met hoofdletter beginnen)
+    # Kolomnamen standaardiseren
     df.columns = [col.capitalize() for col in df.columns]
 
-    # Controleer of download gelukt is
-    if df.empty:
-        st.error("Geen data gevonden voor deze combinatie van ticker en interval.")
+    # ❗ Validatie van kolommen vóór je ze gebruikt
+    required = {"Open", "High", "Low", "Close", "Volume"}
+    missing = required - set(df.columns)
+    if missing:
+        st.error(f"Data mist vereiste kolommen: {missing}")
         return None
 
     # Alleen geldige rijen houden
@@ -38,15 +40,10 @@ def fetch_data(ticker, interval):
         ((df["Open"] != df["Close"]) | (df["High"] != df["Low"]))
     ]
 
-    # Zorg voor correcte tijdindex
+    # Tijdindex controleren
     if not isinstance(df.index, pd.DatetimeIndex):
         df.index = pd.to_datetime(df.index, errors="coerce")
     df = df[~df.index.isna()]
-    
-    required = {"Open", "High", "Low", "Close", "Volume"}
-    if not required.issubset(df.columns):
-        st.error(f"Data mist vereiste kolommen: {required - set(df.columns)}")
-    return None
 
     return df if not df.empty else None
 
