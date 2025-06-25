@@ -42,10 +42,10 @@ def calculate_sat(df):
 
     # Bereken range en body
     df["range"] = df["High"] - df["Low"]
-    df["body"] = abs(df["Close_prev"] - df["Open"])
+    df["body"] = abs(df["Close"] - df["Open"])
 
     # Bepaal richting van de candle
-    df["direction"] = np.where(df["Close_prev"] > df["Open"], 1, -1)
+    df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
 
     # Bereken gemiddelde volatiliteit
     df["volatiliteit"] = df["range"].rolling(window=9).mean()
