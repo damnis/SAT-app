@@ -366,7 +366,12 @@ fig, ax1 = plt.subplots(figsize=(10, 4))
 fig, ax = plt.subplots(figsize=(10, 4))
 
 # Kleuren voor positieve/negatieve SAT
-sat_colors = ["green" if v > 0 else "red" for v in df["SAT"]]
+if "SAT" in df.columns:
+    sat_colors = ["green" if v > 0 else "red" for v in df["SAT"]]
+else:
+    st.error("SAT-kolom ontbreekt in de data. Waarschijnlijk is er iets misgegaan bij het berekenen.")
+    st.stop()
+#sat_colors = ["green" if v > 0 else "red" for v in df["SAT"]]
 ax.bar(df.index, df["SAT"], color=sat_colors, label="SAT")
 
 # Trend-lijn op dezelfde as (gÃ©Ã©n twinx)
