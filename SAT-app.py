@@ -42,6 +42,11 @@ def fetch_data(ticker, interval):
     if not isinstance(df.index, pd.DatetimeIndex):
         df.index = pd.to_datetime(df.index, errors="coerce")
     df = df[~df.index.isna()]
+    
+    required = {"Open", "High", "Low", "Close", "Volume"}
+    if not required.issubset(df.columns):
+    st.error(f"Data mist vereiste kolommen: {required - set(df.columns)}")
+    return None
 
     return df if not df.empty else None
 
