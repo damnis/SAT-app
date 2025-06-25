@@ -50,7 +50,7 @@ def calculate_sat(df):
 # -----------------------
 def determine_advice(df, threshold):
     df = df.copy()
-    df["Trend"] = df["SAT"].rolling(window=25).mean()
+    df["Trend"] = df["SAT"].rolling(window=15).mean()
     df["TrendChange"] = df["Trend"] - df["Trend"].shift(1)
     df["Advies"] = np.nan
     df.loc[df["TrendChange"] > threshold, "Advies"] = "Kopen"
