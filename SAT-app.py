@@ -4,11 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -----------------------
 # DATA OPHALEN
-# -----------------------
-# DATA OPHALEN
-# -----------------------
 
 def fetch_data(ticker, interval):
     if interval == "15m":
@@ -22,9 +18,15 @@ def fetch_data(ticker, interval):
     else:
         period = "360wk"
     
-    df = yf.download(ticker, interval=interval, period=period)
+    df = yf.download(ticker, interval=interval, period=period, group_by="ticker", auto_adjust=False)
 
-       
+    # Fix: als MultiIndex, vlakken we af naar enkelvoudige kolomnamen
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
+    # Kolommen uniformiseren (met hoofdletter beginnen)
+    df.columns = [col.capitalize() for col in df.columns]
+
     # Controleer of download gelukt is
     if df.empty:
         st.error("Geen data gevonden voor deze combinatie van ticker en interval.")
@@ -40,9 +42,8 @@ def fetch_data(ticker, interval):
     if not isinstance(df.index, pd.DatetimeIndex):
         df.index = pd.to_datetime(df.index, errors="coerce")
     df = df[~df.index.isna()]
-    
-    return df if not df.empty else None
 
+    return df if not df.empty else None
 
 # -----------------------
 # SAT-indicator
