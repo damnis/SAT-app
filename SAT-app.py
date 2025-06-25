@@ -33,9 +33,10 @@ def fetch_data(ticker, interval):
 # -----------------------
 def calculate_sat(df):
     df = df.copy()
+    df["Close_prev"] = df["Close"].shift(1)
     df["range"] = df["High"] - df["Low"]
-    df["body"] = abs(df["Close"] - df["Open"])
-    df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
+    df["body"] = abs(df["Close_prev"] - df["Open"])
+    df["direction"] = np.where(df["Close_prev"] > df["Open"], 1, -1)
     df["volatiliteit"] = df["range"].rolling(window=9).mean()
     df["SAT"] = (
         df["direction"] *
