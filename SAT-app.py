@@ -19,10 +19,12 @@ def fetch_data(ticker, interval):
         period = "360wk"
 
     df = yf.download(ticker, interval=interval, period=period)
+    st.write("Kolomniveaus:", df.columns.names)
+    st.write("Kolomnamen:", df.columns.tolist())
 
     # ✅ MultiIndex oplossen (zoals bij 'MMM')
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(1)
+        df.columns = df.columns.get_level_values(0)  # Probeer dit in plaats van (1)
 
     # ✅ Controle op kolommen
     required = {"Open", "High", "Low", "Close", "Volume"}
