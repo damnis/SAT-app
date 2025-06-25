@@ -174,7 +174,7 @@ interval_mapping = {
     "15-minuten": "15m"
 }
 interval = interval_mapping[interval_optie]
-thresh = st.slider("Gevoeligheid van trendverandering", 0.001, 0.25, 0.05, step=0.001)
+thresh = st.slider("Gevoeligheid van trendverandering", 0.0001, 0.025, 0.005, step=0.0001)
 
 # --- Berekening ---
 df = fetch_data(ticker, interval)
