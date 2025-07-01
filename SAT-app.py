@@ -31,36 +31,48 @@ def fetch_data(ticker, interval):
 # -----------------------
 # SAT-indicator
 # -----------------------
+# ✅ Helperfunctie voor veilige conversie naar float
+def safe_float(val):
+    try:
+        return float(val) if pd.notna(val) else 0.0
+    except:
+        return 0.0
+
+# ✅ Verbeterde SAT-berekening
 def calculate_sat(df):
-    df = df.copy()
+    df["MA150"] = df["Close"].rolling(window=150).mean()
+    df["MA30"] = df["Close"].rolling(window=30).mean()
+    df["SAT_Stage"] = np.nan  # eerst lege kolom
 
-    # Bereken voorgaande slotkoers
-    df["Close_prev"] = df["Close"].shift(1)
+    for i in range(1, len(df)):
+        ma150 = safe_float(df["MA150"].iloc[i])
+        ma150_prev = safe_float(df["MA150"].iloc[i - 1])
+        ma30 = safe_float(df["MA30"].iloc[i])
+        ma30_prev = safe_float(df["MA30"].iloc[i - 1])
+        close = safe_float(df["Close"].iloc[i])
+        stage_prev = safe_float(df["SAT_Stage"].iloc[i - 1]) if i > 1 else 0.0
+        stage = stage_prev  # start met vorige stage-waarde
 
-    # Verwijder eerste rij met NaN in Close_prev (kan niet gebruikt worden)
-    #df = df.dropna(subset=["Close_prev"])
+        if (ma150 > ma150_prev and close > ma150 and ma30 > close) or (close > ma150 and ma30 < ma30_prev and ma30 > close):
+            stage = -1
+        elif ma150 < ma150_prev and close < ma150 and close > ma30 and ma30 > ma30_prev:
+            stage = 1
+        elif ma150 > close and ma150 > ma150_prev:
+            stage = -1
+        elif ma150 > close and ma150 < ma150_prev:
+            stage = -2
+        elif ma150 < close and ma150 < ma150_prev and ma30 > ma30_prev:
+            stage = 1
+        elif ma150 < close and ma150 > ma150_prev and ma30 > ma30_prev:
+            stage = 2
 
-    # Bereken range en body
-    df["range"] = df["High"] - df["Low"]
-    df["body"] = abs(df["Close"] - df["Open"])
+    #    df.iat[i, df.columns.get_loc("SAT_Stage")] = stage
+        df.at[df.index[i], "SAT_Stage"] = stage
 
-    # Bepaal richting van de candle
-    df["direction"] = np.where(df["Close"] > df["Open"], 1, -1)
-
-    # Bereken gemiddelde volatiliteit
-    df["volatiliteit"] = df["range"].rolling(window=9).mean()
-
-    # Bereken SAT-score
-    df["SAT"] = (
-        df["direction"] *
-        (df["body"] / df["range"].replace(0, np.nan)) *
-        (df["range"] / df["volatiliteit"].replace(0, np.nan))
-    )
-
-    # Vul ontbrekende waarden in SAT met 0
-    df["SAT"] = df["SAT"].fillna(0)
-
+    df["SAT_Stage"] = df["SAT_Stage"].astype(float)
+    df["SAT_Trend"] = df["SAT_Stage"].rolling(window=25).mean()
     return df
+    
 
 # -----------------------
 # Advies en rendement
